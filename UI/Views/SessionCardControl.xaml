@@ -1,0 +1,183 @@
+<UserControl x:Class="CVCloudApp.UI.Views.SessionCardControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:CVCloudApp.UI.Converters">
+
+    <UserControl.Resources>
+        <converters:StatusToColorConverter      x:Key="StatusToColor"/>
+        <converters:StatusToForegroundConverter x:Key="StatusToForeground"/>
+        <converters:StatusToStringConverter     x:Key="StatusToString"/>
+        <converters:BoolToVisibilityConverter   x:Key="BoolToVis"/>
+
+        <Style x:Key="CardBtn" TargetType="Button">
+            <Setter Property="Padding"         Value="10,5"/>
+            <Setter Property="Margin"          Value="3,0"/>
+            <Setter Property="Background"      Value="#2E2E2E"/>
+            <Setter Property="Foreground"      Value="#E0E0E0"/>
+            <Setter Property="BorderBrush"     Value="#555"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.3"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#3A3A3A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- Outer card border — highlights cyan when selected in feed monitor -->
+    <Border Background="#1E1E1E"
+            BorderThickness="1"
+            CornerRadius="8"
+            Margin="6">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="BorderBrush" Value="#383838"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="BorderBrush" Value="#00E5FF"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Opacity="0.4" BlurRadius="10" ShadowDepth="3"/>
+        </Border.Effect>
+
+        <Grid>
+            <!-- ── GHOST state (IsOccupied = false) ── -->
+            <Border Visibility="{Binding IsOccupied, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                    Background="#181818"
+                    BorderBrush="#2A2A2A"
+                    BorderThickness="2"
+                    CornerRadius="8">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.35">
+                    <TextBlock Text="{Binding SessionId, StringFormat='#{0}'}"
+                               FontSize="36" FontWeight="Bold"
+                               Foreground="#555"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Waiting for session…"
+                               FontSize="13" FontStyle="Italic"
+                               Foreground="#444"
+                               HorizontalAlignment="Center"
+                               Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── OCCUPIED state (IsOccupied = true) ── -->
+            <StackPanel Visibility="{Binding IsOccupied, Converter={StaticResource BoolToVis}}"
+                        Margin="12">
+
+                <!-- Card header: session id + browser info + status badge -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding SessionId, StringFormat='Session #{0}'}"
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="#E0E0E0"/>
+                        <TextBlock FontSize="11" Foreground="#888"
+                                   TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding BrowserName, Mode=OneWay}"/>
+                            <Run Text=" — "/>
+                            <Run Text="{Binding WindowTitle, Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Status badge -->
+                    <Border Grid.Column="1"
+                            Background="{Binding Status, Converter={StaticResource StatusToColor}}"
+                            CornerRadius="4"
+                            Padding="7,3"
+                            VerticalAlignment="Top">
+                        <TextBlock Text="{Binding Status, Converter={StaticResource StatusToString}}"
+                                   Foreground="{Binding Status, Converter={StaticResource StatusToForeground}}"
+                                   FontSize="11" FontWeight="SemiBold"/>
+                    </Border>
+                </Grid>
+
+                <!-- Thumbnail -->
+                <Border Background="#0A0A0A"
+                        BorderBrush="#2A2A2A"
+                        BorderThickness="1"
+                        Height="130"
+                        Margin="0,0,0,8">
+                    <Grid>
+                        <Image Source="{Binding CaptureFrame}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="LowQuality"/>
+                        <!-- Fallback when no frame yet -->
+                        <TextBlock Text="No preview"
+                                   Foreground="#333"
+                                   FontSize="12" FontStyle="Italic"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding CaptureFrame, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Script selector -->
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ComboBox Grid.Column="0"
+                              ItemsSource="{Binding AvailableScripts}"
+                              SelectedItem="{Binding SelectedScriptPath, Mode=TwoWay}"
+                              DropDownOpened="ScriptCombo_DropDownOpened"
+                              Background="#2A2A2A"
+                              Foreground="#E0E0E0"
+                              BorderBrush="#555"
+                              Padding="6,4"
+                              Margin="0,0,6,0">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding ActiveScriptName}"
+                               Foreground="#29B6F6"
+                               FontStyle="Italic"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}"/>
+                </Grid>
+
+                <!-- Action buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                    <Button Content="Open CV Window"
+                            Command="{Binding OpenCvWindowCommand}"
+                            Style="{StaticResource CardBtn}"
+                            BorderBrush="#29B6F6"
+                            Foreground="#29B6F6"/>
+
+                    <Button Content="Start Script"
+                            Command="{Binding StartScriptCommand}"
+                            Style="{StaticResource CardBtn}"
+                            Foreground="#00E676"/>
+
+                    <Button Content="Stop Script"
+                            Command="{Binding StopScriptCommand}"
+                            Style="{StaticResource CardBtn}"
+                            Foreground="#FF5252"/>
+
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

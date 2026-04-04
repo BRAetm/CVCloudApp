@@ -1,0 +1,22 @@
+<UserControl x:Class="CVCloudApp.UI.Controls.CvPreviewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#0C0A14">
+
+    <Grid x:Name="RootGrid">
+        <!-- Live feed image -->
+        <Image x:Name="FeedImage"
+               Source="{Binding FrameSource, RelativeSource={RelativeSource AncestorType=UserControl}}"
+               Stretch="Uniform"
+               SnapsToDevicePixels="True"
+               RenderOptions.BitmapScalingMode="LowQuality"/>
+
+        <!-- Canvas overlay for region drawing + HSV tooltip -->
+        <Canvas x:Name="OverlayCanvas"
+                Background="Transparent"
+                MouseLeftButtonDown="OnMouseDown"
+                MouseMove="OnMouseMove"
+                MouseLeftButtonUp="OnMouseUp"
+                ClipToBounds="True"/>
+    </Grid>
+</UserControl>

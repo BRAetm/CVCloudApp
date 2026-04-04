@@ -1,0 +1,371 @@
+<Window x:Class="CVCloudApp.UI.Views.NewSessionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CVCloud — New Session"
+        Width="620" Height="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        FontFamily="Segoe UI"
+        MouseLeftButtonDown="OnDragWindow">
+
+    <Border CornerRadius="16" BorderThickness="1" BorderBrush="#2E2B42" ClipToBounds="True">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0.3,1">
+                <GradientStop Color="#14112A" Offset="0"/>
+                <GradientStop Color="#0E0C1A" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid Margin="32,28,32,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Title -->
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>   <!-- Session Name -->
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>   <!-- Platform label -->
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="Auto"/>   <!-- Platform cards -->
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="Auto"/>   <!-- URL field -->
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>   <!-- Buttons -->
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar -->
+            <Grid Grid.Row="0">
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="36" Height="36" CornerRadius="10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#7C3AED" Offset="0"/>
+                                <GradientStop Color="#9333EA" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <TextBlock Text="+" Foreground="White" FontSize="20" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0"/>
+                    </Border>
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="New Session" Foreground="#F0ECFF" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="Launch a cloud gaming or remote play session" Foreground="#5D5880" FontSize="11.5" Margin="0,1,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Click="OnCancel" Cursor="Hand" Width="28" Height="28">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="6">
+                                <TextBlock Text="&#x2715;" Foreground="#5D5880" FontSize="13"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#1E1B30"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <!-- Session Name -->
+            <StackPanel Grid.Row="2">
+                <TextBlock Text="SESSION NAME" Foreground="#6B6490" FontSize="10.5" FontWeight="SemiBold"
+                           Margin="0,0,0,7"/>
+                <TextBox x:Name="NameBox"
+                         Background="#1A1828" Foreground="#E8E0FF" BorderBrush="#2E2B42"
+                         BorderThickness="1" Padding="12,10" FontSize="14" CaretBrush="#A78BFA"
+                         Text="Session">
+                    <TextBox.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="10"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+            </StackPanel>
+
+            <!-- Platform Label -->
+            <TextBlock Grid.Row="4" Text="PLATFORM" Foreground="#6B6490" FontSize="10.5"
+                       FontWeight="SemiBold"/>
+
+            <!-- Platform Cards — Row 1: Cloud / Remote Play -->
+            <WrapPanel Grid.Row="6" Orientation="Horizontal">
+                <!-- Xbox Cloud Gaming -->
+                <RadioButton x:Name="PlatformXbox" GroupName="Platform" IsChecked="True"
+                             Cursor="Hand" Checked="OnPlatformChanged">
+                    <RadioButton.Template>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border CornerRadius="10" Padding="12,10" Width="128" Margin="0,0,6,6"
+                                    BorderThickness="1.5" Background="#12101E">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#2E2B42"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#7C3AED"/>
+                                                <Setter Property="Background" Value="#1A1535"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#x1F3AE;" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Xbox Cloud" Foreground="#C8C0E8" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Cloud Gaming" Foreground="#5D5880" FontSize="9" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </RadioButton.Template>
+                </RadioButton>
+
+                <!-- Xbox Remote Play (app window capture) -->
+                <RadioButton x:Name="PlatformXboxRP" GroupName="Platform" Cursor="Hand"
+                             Checked="OnPlatformChanged">
+                    <RadioButton.Template>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border CornerRadius="10" Padding="12,10" Width="128" Margin="0,0,6,6"
+                                    BorderThickness="1.5" Background="#12101E">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#2E2B42"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#00B050"/>
+                                                <Setter Property="Background" Value="#101E15"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#x1F5A5;" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Xbox RP" Foreground="#C8C0E8" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Remote Play" Foreground="#5D5880" FontSize="9" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </RadioButton.Template>
+                </RadioButton>
+
+                <!-- PS Remote Play -->
+                <RadioButton x:Name="PlatformPS" GroupName="Platform" Cursor="Hand"
+                             Checked="OnPlatformChanged">
+                    <RadioButton.Template>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border CornerRadius="10" Padding="12,10" Width="128" Margin="0,0,6,6"
+                                    BorderThickness="1.5" Background="#12101E">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#2E2B42"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#0070D1"/>
+                                                <Setter Property="Background" Value="#101828"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#x1F579;" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="PS Remote" Foreground="#C8C0E8" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Remote Play" Foreground="#5D5880" FontSize="9" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </RadioButton.Template>
+                </RadioButton>
+
+                <!-- Capture Card -->
+                <RadioButton x:Name="PlatformCapture" GroupName="Platform" Cursor="Hand"
+                             Checked="OnPlatformChanged">
+                    <RadioButton.Template>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border CornerRadius="10" Padding="12,10" Width="128" Margin="0,0,6,6"
+                                    BorderThickness="1.5" Background="#12101E">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#2E2B42"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#FF6B2B"/>
+                                                <Setter Property="Background" Value="#1E1410"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#x1F4F9;" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Capture Card" Foreground="#C8C0E8" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="OpenCV/DirectShow" Foreground="#5D5880" FontSize="9" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </RadioButton.Template>
+                </RadioButton>
+
+                <!-- Custom URL -->
+                <RadioButton x:Name="PlatformCustom" GroupName="Platform" Cursor="Hand"
+                             Checked="OnPlatformChanged">
+                    <RadioButton.Template>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border CornerRadius="10" Padding="12,10" Width="128" Margin="0,0,6,6"
+                                    BorderThickness="1.5" Background="#12101E">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#2E2B42"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#F59E0B"/>
+                                                <Setter Property="Background" Value="#1A1810"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#x1F310;" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Custom" Foreground="#C8C0E8" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Any URL" Foreground="#5D5880" FontSize="9" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </RadioButton.Template>
+                </RadioButton>
+            </WrapPanel>
+
+            <!-- Dynamic options panel (changes based on platform) -->
+            <Grid Grid.Row="8">
+                <!-- Custom URL field -->
+                <StackPanel x:Name="CustomUrlPanel" Visibility="Collapsed">
+                    <TextBlock Text="URL" Foreground="#6B6490" FontSize="10.5" FontWeight="SemiBold"
+                               Margin="0,0,0,7"/>
+                    <TextBox x:Name="UrlBox"
+                             Background="#1A1828" Foreground="#E8E0FF" BorderBrush="#2E2B42"
+                             BorderThickness="1" Padding="12,10" FontSize="13" CaretBrush="#A78BFA"
+                             Text="https://">
+                        <TextBox.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="10"/>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                </StackPanel>
+
+                <!-- Capture device picker -->
+                <StackPanel x:Name="CaptureDevicePanel" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                        <TextBlock Text="CAPTURE DEVICE" Foreground="#6B6490" FontSize="10.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="Scan" Click="OnScanDevices" Cursor="Hand" Margin="12,0,0,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="#1A1828" CornerRadius="6"
+                                            BorderBrush="#2E2B42" BorderThickness="1" Padding="10,3">
+                                        <TextBlock Text="Scan" Foreground="#A78BFA" FontSize="10.5"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#2A2440"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                    <ComboBox x:Name="DeviceCombo" Foreground="#E8E0FF" FontSize="12"
+                              Background="#1A1828" BorderBrush="#2E2B42" Padding="10,8"/>
+                </StackPanel>
+
+                <!-- Window picker (Xbox RP / PS RP) -->
+                <StackPanel x:Name="WindowPickerPanel" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,7">
+                        <TextBlock Text="TARGET WINDOW" Foreground="#6B6490" FontSize="10.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="Scan" Click="OnScanWindows" Cursor="Hand" Margin="12,0,0,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="#1A1828" CornerRadius="6"
+                                            BorderBrush="#2E2B42" BorderThickness="1" Padding="10,3">
+                                        <TextBlock Text="Scan" Foreground="#A78BFA" FontSize="10.5"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#2A2440"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                    <ComboBox x:Name="WindowCombo" Foreground="#E8E0FF" FontSize="12"
+                              Background="#1A1828" BorderBrush="#2E2B42" Padding="10,8"/>
+                </StackPanel>
+
+                <!-- Info text for cloud platforms (no extra config needed) -->
+                <TextBlock x:Name="CloudInfoText" Foreground="#3D3860" FontSize="11" FontStyle="Italic"
+                           Text="Will open in embedded browser" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Buttons -->
+            <Grid Grid.Row="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="1" Width="100" Height="42"
+                        Click="OnCancel" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="#1A1828" CornerRadius="10"
+                                    BorderBrush="#2E2B42" BorderThickness="1">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#2A2440"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <TextBlock Text="Cancel" Foreground="#8B85B0" FontSize="13.5" FontWeight="Medium"/>
+                </Button>
+
+                <Button Grid.Column="3" Width="120" Height="42"
+                        Click="OnLaunch" Cursor="Hand" IsDefault="True">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" CornerRadius="10">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#7C3AED" Offset="0"/>
+                                        <GradientStop Color="#9333EA" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background">
+                                        <Setter.Value>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#8B5CF6" Offset="0"/>
+                                                <GradientStop Color="#A855F7" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Launch" Foreground="White" FontWeight="SemiBold" FontSize="13.5"/>
+                        <TextBlock Text=" &#x2192;" Foreground="#C4B5FD" FontSize="13.5"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

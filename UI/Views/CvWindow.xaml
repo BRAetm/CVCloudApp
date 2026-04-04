@@ -1,0 +1,32 @@
+<Window x:Class="CVCloudApp.UI.Views.CvWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle}"
+        Background="#000000"
+        MinWidth="480" MinHeight="320"
+        Width="960" Height="540"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize">
+
+    <Grid>
+        <!-- Live feed image — fills window -->
+        <Image Source="{Binding LiveFeed}"
+               Stretch="Uniform"
+               RenderOptions.BitmapScalingMode="LowQuality"
+               HorizontalAlignment="Stretch"
+               VerticalAlignment="Stretch"/>
+
+        <!-- Overlay — top-left corner -->
+        <Border HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="10"
+                Padding="8,5"
+                CornerRadius="4"
+                Background="#99000000">
+            <TextBlock Text="{Binding OverlayLine}"
+                       Foreground="#29B6F6"
+                       FontFamily="Consolas"
+                       FontSize="12"/>
+        </Border>
+    </Grid>
+</Window>

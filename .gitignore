@@ -1,0 +1,43 @@
+## .NET / C#
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+.vs/
+
+## Python
+__pycache__/
+*.pyc
+*.pyo
+
+## Build output
+bin/Debug/
+bin/Release/
+Debug/
+Release/
+
+## Keep GPC3 tools
+!Tools/gpc3/*.exe
+
+## IDE
+.idea/
+.vscode/
+
+## OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+## Logs
+*.log
+
+## WebView2 user data
+WebView2/
+
+## Config (local session state)
+Config/session_*.json
+GpcCompiled/
+Templates/
+ScriptConfigs/

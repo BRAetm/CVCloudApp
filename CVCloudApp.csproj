@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HidSharp" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+    <PackageReference Include="NetMQ" Version="4.0.2.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.5" />
+  </ItemGroup>
+
+  <!-- Copy Python scripts to output so SessionViewModel.ScriptsFolder finds them -->
+  <ItemGroup>
+    <None Include="Scripts\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Scripts" />
+  </ItemGroup>
+
+  <!-- Copy GPC3 tools (compiler + VM) to output -->
+  <ItemGroup>
+    <None Include="Tools\gpc3\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Tools\gpc3" />
+  </ItemGroup>
+
+  <!-- Ensure Config folder exists in output -->
+  <Target Name="EnsureConfigFolder" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)Config" />
+  </Target>
+
+</Project>
