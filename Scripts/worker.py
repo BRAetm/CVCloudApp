@@ -32,7 +32,7 @@ import zmq
 # ---------------------------------------------------------------------------
 
 FRAME_PUB_PORT = 5580      # Must match FramePublisher.PubPort in C#
-DEFAULT_FPS = 30           # Default frame rate cap
+DEFAULT_FPS = 60           # Default frame rate cap
 MIN_FPS = 1
 MAX_FPS = 120
 
@@ -168,6 +168,7 @@ def make_emit(socket: zmq.Socket, session_id: int):
     """Returns an emit() callable that serializes and PUB-sends a GamepadEvent dict."""
     _count = [0]
     topic = f"gamepad_{session_id}"
+    cv_topic = f"cv_frame_{session_id}"
 
     def emit(gamepad_event: dict) -> None:
         gamepad_event["session_id"] = session_id
@@ -179,6 +180,16 @@ def make_emit(socket: zmq.Socket, session_id: int):
             print(f"[worker:{session_id}] emitted gamepad event #{_count[0]}")
             sys.stdout.flush()
 
+    def emit_cv_frame(frame: np.ndarray, quality: int = 60) -> None:
+        """Send an annotated CV frame back to C# for display overlay."""
+        try:
+            _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            socket.send_string(cv_topic, flags=zmq.SNDMORE | zmq.NOBLOCK)
+            socket.send(jpeg.tobytes(), flags=zmq.NOBLOCK)
+        except zmq.ZMQError:
+            pass  # drop frame if send would block
+
+    emit.cv_frame = emit_cv_frame
     return emit
 
 
@@ -245,23 +256,43 @@ def frame_loop(session_id: int, script, emit, sub_socket: zmq.Socket,
     error_count = 0
     MAX_CONSECUTIVE_ERRORS = 10
 
+    fps_counter = 0
+    fps_timer = time.monotonic()
+
     while True:
         frame_start = time.monotonic()
 
         try:
-            events = sub_socket.poll(100)  # 100ms timeout
-            if events:
-                topic = sub_socket.recv_string()
-                jpeg_bytes = sub_socket.recv()
+            # Drain all pending frames, only process the LATEST one (drop stale)
+            latest_jpeg = None
+            drained = 0
+            while True:
+                events = sub_socket.poll(0)  # non-blocking check
+                if not events:
+                    break
+                topic = sub_socket.recv_string(zmq.NOBLOCK)
+                jpeg_bytes = sub_socket.recv(zmq.NOBLOCK)
+                latest_jpeg = jpeg_bytes
+                drained += 1
 
+            # If nothing was ready, do a short blocking poll
+            if latest_jpeg is None:
+                events = sub_socket.poll(50)  # 50ms timeout (was 100)
+                if events:
+                    topic = sub_socket.recv_string()
+                    latest_jpeg = sub_socket.recv()
+
+            if latest_jpeg is not None:
                 frame_count += 1
                 poll_miss = 0
                 error_count = 0
-                if frame_count <= 5 or frame_count % 100 == 0:
-                    print(f"[worker:{session_id}] frame #{frame_count} ({len(jpeg_bytes)} bytes)")
+                fps_counter += 1
+
+                if frame_count <= 5 or frame_count % 200 == 0:
+                    print(f"[worker:{session_id}] frame #{frame_count} ({len(latest_jpeg)} bytes, drained {drained})")
                     sys.stdout.flush()
 
-                arr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+                arr = np.frombuffer(latest_jpeg, dtype=np.uint8)
                 frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
                 if frame is not None:
@@ -275,22 +306,298 @@ def frame_loop(session_id: int, script, emit, sub_socket: zmq.Socket,
                             print(f"[worker:{session_id}] Too many consecutive errors ({error_count}), stopping.", file=sys.stderr)
                             break
                 else:
-                    print(f"Error Code: {ERR_FRAME_DECODE} - decode failed ({len(jpeg_bytes)} bytes)", file=sys.stderr)
+                    print(f"Error Code: {ERR_FRAME_DECODE} - decode failed ({len(latest_jpeg)} bytes)", file=sys.stderr)
             else:
                 poll_miss += 1
-                if poll_miss == 20 or poll_miss % 200 == 0:
+                if poll_miss == 40 or poll_miss % 400 == 0:
                     print(f"[worker:{session_id}] no frames ({poll_miss} polls missed)", file=sys.stderr)
                     sys.stderr.flush()
+
+            # Print actual FPS every 3 seconds
+            now = time.monotonic()
+            if now - fps_timer >= 3.0:
+                actual_fps = fps_counter / (now - fps_timer)
+                print(f"[worker:{session_id}] actual FPS: {actual_fps:.1f}")
+                sys.stdout.flush()
+                fps_counter = 0
+                fps_timer = now
 
         except zmq.ZMQError as e:
             if e.errno != zmq.EAGAIN:
                 print(f"Error Code: {ERR_ZMQ_CONNECT} - ZMQ error: {e}", file=sys.stderr)
 
-        # FPS cap
+        # Minimal sleep to avoid busy-spinning, but don't cap FPS artificially
         elapsed = time.monotonic() - frame_start
         sleep_time = frame_interval - elapsed
-        if sleep_time > 0:
+        if sleep_time > 0.001:
             time.sleep(sleep_time)
+
+
+# ---------------------------------------------------------------------------
+# Direct screen capture loop (bypasses C# JPEG pipeline entirely)
+# ---------------------------------------------------------------------------
+
+def _find_window_rect(title_substring: str):
+    """Find a window by title substring and return its (left, top, right, bottom) rect."""
+    import ctypes
+    import ctypes.wintypes as wintypes
+
+    user32 = ctypes.windll.user32
+    EnumWindows = user32.EnumWindows
+    GetWindowTextW = user32.GetWindowTextW
+    GetWindowTextLengthW = user32.GetWindowTextLengthW
+    IsWindowVisible = user32.IsWindowVisible
+    GetWindowRect = user32.GetWindowRect
+    GetClientRect = user32.GetClientRect
+    ClientToScreen = user32.ClientToScreen
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+
+    result = [None]
+    search = title_substring.lower()
+
+    def callback(hwnd, lparam):
+        if not IsWindowVisible(hwnd):
+            return True
+        length = GetWindowTextLengthW(hwnd)
+        if length == 0:
+            return True
+        buf = ctypes.create_unicode_buffer(length + 1)
+        GetWindowTextW(hwnd, buf, length + 1)
+        title = buf.value
+        if search in title.lower():
+            # Get client area position (excludes title bar/borders)
+            rect = wintypes.RECT()
+            GetClientRect(hwnd, ctypes.byref(rect))
+            pt = wintypes.POINT(0, 0)
+            ClientToScreen(hwnd, ctypes.byref(pt))
+            left = pt.x
+            top = pt.y
+            right = left + rect.right
+            bottom = top + rect.bottom
+            if right > left and bottom > top:
+                result[0] = {"left": left, "top": top, "right": right, "bottom": bottom,
+                             "width": right - left, "height": bottom - top, "title": title}
+                return False  # stop enumeration
+        return True
+
+    EnumWindows(WNDENUMPROC(callback), 0)
+    return result[0]
+
+
+def direct_capture_loop(session_id: int, script, emit, fps: int = 60,
+                        region: dict = None) -> None:
+    """
+    Captures frames directly from the screen using dxcam (GPU) or mss (fallback).
+    No JPEG encode/decode — frames stay as numpy arrays the whole time.
+    If the script sets CAPTURE_WINDOW, only that window's region is captured.
+    """
+    frame_interval = 1.0 / fps
+    frame_count = 0
+    fps_counter = 0
+    fps_timer = time.monotonic()
+    camera = None
+    sct = None
+    window_region = None
+    last_window_check = 0
+
+    # Check if script wants a specific window
+    capture_window = getattr(sys.modules.get("cv_script"), "CAPTURE_WINDOW", None)
+    if capture_window is None:
+        # Check the loaded module directly
+        for mod in sys.modules.values():
+            cw = getattr(mod, "CAPTURE_WINDOW", None)
+            if cw and isinstance(cw, str):
+                capture_window = cw
+                break
+
+    if capture_window:
+        print(f"[worker:{session_id}] Looking for window: '{capture_window}'...")
+        sys.stdout.flush()
+        # Wait up to 10s for the window to appear
+        for _ in range(20):
+            window_region = _find_window_rect(capture_window)
+            if window_region:
+                break
+            time.sleep(0.5)
+        if window_region:
+            region = window_region
+            print(f"[worker:{session_id}] Found window: '{window_region['title']}' "
+                  f"at ({region['left']},{region['top']}) {region['width']}x{region['height']}")
+        else:
+            print(f"[worker:{session_id}] WARNING: Window '{capture_window}' not found, capturing full screen")
+        sys.stdout.flush()
+
+    # Try dxcam first (GPU-accelerated, lowest latency)
+    try:
+        import dxcam
+        camera = dxcam.create(output_color="BGR")
+        if region:
+            capture_region = (region["left"], region["top"], region["right"], region["bottom"])
+        else:
+            capture_region = None
+        camera.start(target_fps=fps, region=capture_region)
+        print(f"[worker:{session_id}] Direct capture: dxcam (GPU) at {fps}fps")
+        sys.stdout.flush()
+    except Exception as e:
+        print(f"[worker:{session_id}] dxcam unavailable ({e}), falling back to mss")
+        camera = None
+
+    # Fallback to mss
+    if camera is None:
+        try:
+            from mss import mss
+            sct = mss()
+            print(f"[worker:{session_id}] Direct capture: mss (CPU) at {fps}fps")
+            sys.stdout.flush()
+        except ImportError:
+            print(f"[worker:{session_id}] ERROR: No capture library. pip install dxcam mss")
+            return
+
+    print(f"[worker:{session_id}] Direct capture loop starting...")
+    sys.stdout.flush()
+
+    while True:
+        frame_start = time.monotonic()
+
+        try:
+            # Re-check window position every 2 seconds (in case it moved/resized)
+            if capture_window and sct is not None and frame_start - last_window_check > 2.0:
+                new_rect = _find_window_rect(capture_window)
+                if new_rect:
+                    region = new_rect
+                last_window_check = frame_start
+
+            frame = None
+
+            if camera is not None:
+                frame = camera.get_latest_frame()
+            elif sct is not None:
+                if region:
+                    monitor = {"left": region["left"], "top": region["top"],
+                               "width": region["width"], "height": region["height"]}
+                else:
+                    monitor = sct.monitors[1]
+                img = sct.grab(monitor)
+                frame = np.array(img)[:, :, :3]  # BGRA -> BGR
+
+            if frame is not None:
+                frame_count += 1
+                fps_counter += 1
+
+                if frame_count <= 3 or frame_count % 300 == 0:
+                    h, w = frame.shape[:2]
+                    print(f"[worker:{session_id}] direct frame #{frame_count} ({w}x{h})")
+                    sys.stdout.flush()
+
+                try:
+                    script.on_frame(frame, session_id, emit)
+                except Exception as exc:
+                    print(f"Error Code: {ERR_SCRIPT_RUNTIME} - on_frame error: {exc}", file=sys.stderr)
+
+            # Print actual FPS every 3 seconds
+            now = time.monotonic()
+            if now - fps_timer >= 3.0:
+                actual_fps = fps_counter / (now - fps_timer)
+                print(f"[worker:{session_id}] direct capture FPS: {actual_fps:.1f}")
+                sys.stdout.flush()
+                fps_counter = 0
+                fps_timer = now
+
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"[worker:{session_id}] capture error: {e}", file=sys.stderr)
+            time.sleep(0.1)
+
+        elapsed = time.monotonic() - frame_start
+        sleep_time = frame_interval - elapsed
+        if sleep_time > 0.001:
+            time.sleep(sleep_time)
+
+    # Cleanup
+    if camera is not None:
+        try:
+            camera.stop()
+        except Exception:
+            pass
+    cv2.destroyAllWindows()
+    print(f"[worker:{session_id}] Direct capture ended ({frame_count} frames)")
+
+
+# ---------------------------------------------------------------------------
+# Shared memory frame loop (reads raw BGR from C# — no JPEG, 60+ FPS)
+# ---------------------------------------------------------------------------
+
+def shared_memory_loop(session_id: int, script, emit, fps: int = 60) -> None:
+    """
+    Reads raw BGR frames from C# via shared memory (SharedFrameBridge).
+    No JPEG encode/decode at all — pure game frames at capture speed.
+    """
+    try:
+        from shared_frame import SharedFrameReader
+    except ImportError:
+        print(f"[worker:{session_id}] ERROR: shared_frame.py not found")
+        return
+
+    reader = SharedFrameReader()
+    if not reader.open():
+        print(f"[worker:{session_id}] Shared memory not available, falling back to ZMQ")
+        return
+
+    frame_interval = 1.0 / fps
+    frame_count = 0
+    fps_counter = 0
+    fps_timer = time.monotonic()
+
+    print(f"[worker:{session_id}] Shared memory frame loop at {fps}fps (zero-copy, no JPEG)")
+    sys.stdout.flush()
+
+    while True:
+        frame_start = time.monotonic()
+
+        try:
+            frame, changed = reader.read()
+
+            if frame is not None and changed:
+                # Make a writable copy (shared memory is read-only)
+                frame = frame.copy()
+                frame_count += 1
+                fps_counter += 1
+
+                if frame_count <= 3 or frame_count % 300 == 0:
+                    h, w = frame.shape[:2]
+                    print(f"[worker:{session_id}] shared mem frame #{frame_count} ({w}x{h})")
+                    sys.stdout.flush()
+
+                try:
+                    script.on_frame(frame, session_id, emit)
+                except Exception as exc:
+                    print(f"Error Code: {ERR_SCRIPT_RUNTIME} - on_frame error: {exc}", file=sys.stderr)
+
+            # FPS tracking
+            now = time.monotonic()
+            if now - fps_timer >= 3.0:
+                actual_fps = fps_counter / (now - fps_timer)
+                print(f"[worker:{session_id}] shared memory FPS: {actual_fps:.1f}")
+                sys.stdout.flush()
+                fps_counter = 0
+                fps_timer = now
+
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"[worker:{session_id}] shared mem error: {e}", file=sys.stderr)
+            time.sleep(0.1)
+
+        elapsed = time.monotonic() - frame_start
+        sleep_time = frame_interval - elapsed
+        if sleep_time > 0.001:
+            time.sleep(sleep_time)
+
+    reader.close()
+    cv2.destroyAllWindows()
+    print(f"[worker:{session_id}] Shared memory loop ended ({frame_count} frames)")
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +652,7 @@ def main() -> None:
 
     # SUB socket for receiving frames from C# FramePublisher
     sub_socket = context.socket(zmq.SUB)
-    sub_socket.setsockopt(zmq.RCVHWM, 5)
+    sub_socket.setsockopt(zmq.RCVHWM, 2)  # Keep only 2 frames buffered — always process latest
     sub_socket.connect(f"tcp://127.0.0.1:{FRAME_PUB_PORT}")
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, f"frame_{session_id}")
 
@@ -372,11 +679,30 @@ def main() -> None:
     # Give SUB socket time to connect (ZMQ slow-joiner problem)
     time.sleep(0.3)
 
+    # Check capture mode:
+    # 1. SHARED_MEMORY = True -> read raw BGR from C# shared memory (fastest, pure game frames)
+    # 2. DIRECT_CAPTURE = True -> dxcam/mss screen grab (fast but captures screen, not game)
+    # 3. Default -> ZMQ JPEG pipeline from C# (slowest but always works)
+    use_shared = getattr(module, "SHARED_MEMORY", False) or "--shared" in sys.argv
+    use_direct = getattr(module, "DIRECT_CAPTURE", False) or "--direct" in sys.argv
+
     try:
         script.on_start(config)
-        print(f"[worker:{session_id}] on_start() complete, entering frame loop...")
+        print(f"[worker:{session_id}] on_start() complete")
         sys.stdout.flush()
-        frame_loop(session_id, script, emit, sub_socket, fps=fps)
+
+        if use_shared:
+            print(f"[worker:{session_id}] Using SHARED MEMORY (zero-copy raw BGR from C# capture)")
+            sys.stdout.flush()
+            shared_memory_loop(session_id, script, emit, fps=fps)
+        elif use_direct:
+            print(f"[worker:{session_id}] Using DIRECT screen capture (dxcam/mss)")
+            sys.stdout.flush()
+            direct_capture_loop(session_id, script, emit, fps=fps, region=getattr(module, "CAPTURE_REGION", None))
+        else:
+            print(f"[worker:{session_id}] Using ZMQ frame pipeline from C#")
+            sys.stdout.flush()
+            frame_loop(session_id, script, emit, sub_socket, fps=fps)
 
     except KeyboardInterrupt:
         print(f"[worker:{session_id}] shutting down (signal).")

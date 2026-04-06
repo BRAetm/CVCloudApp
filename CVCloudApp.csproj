@@ -20,6 +20,11 @@
     <PackageReference Include="System.Drawing.Common" Version="10.0.5" />
   </ItemGroup>
 
+  <!-- Logo and assets -->
+  <ItemGroup>
+    <Resource Include="Assets\tmlogo.png" />
+  </ItemGroup>
+
   <!-- Copy Python scripts to output so SessionViewModel.ScriptsFolder finds them -->
   <ItemGroup>
     <None Include="Scripts\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Scripts" />

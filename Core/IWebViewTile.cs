@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace CVCloudApp.Core;
@@ -16,4 +17,16 @@ public interface IWebViewTile
 
     /// <summary>Destroys the WebView2 and cleans up resources.</summary>
     void DestroyWebView();
+
+    /// <summary>Displays a CV-annotated frame overlay on the tile.</summary>
+    void ShowCvFrame(byte[] jpegBytes);
+
+    /// <summary>Hides the CV overlay.</summary>
+    void HideCvOverlay();
+
+    /// <summary>Starts CDP Page.startScreencast to stream game frames.</summary>
+    Task StartScreencastAsync(int sessionId, int maxFps, int quality, Action<int, byte[]> onFrame);
+
+    /// <summary>Stops CDP screencast.</summary>
+    Task StopScreencastAsync();
 }

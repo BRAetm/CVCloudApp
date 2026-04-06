@@ -31,6 +31,9 @@ public class CvWorkerHost : IAsyncDisposable
     /// <summary>Raised whenever a GamepadState update is received from any worker session.</summary>
     public event Action<int, GamepadState>? StateReceived;
 
+    /// <summary>Raised when a CV-annotated JPEG frame is received from a worker (sessionId, jpegBytes).</summary>
+    public event Action<int, byte[]>? CvFrameReceived;
+
     /// <summary>Raised when a worker process exits unexpectedly (sessionId, exitCode).</summary>
     public event Action<int, int>? WorkerDied;
 
@@ -254,7 +257,8 @@ public class CvWorkerHost : IAsyncDisposable
         }
     }
 
-    private static readonly string LogFile = @"C:\Users\brael\Documents\cvccloud\worker_debug.log";
+    private static readonly string LogFile = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud", "worker_debug.log");
 
     /// <summary>Builds ProcessStartInfo for: python worker.py {sessionId} {zmqPort} {scriptPath}</summary>
     private static ProcessStartInfo BuildWorkerProcess(CloudSession session, string scriptPath)
@@ -285,7 +289,8 @@ public class CvWorkerHost : IAsyncDisposable
                 sub = new SubscriberSocket();
                 sub.Bind($"tcp://127.0.0.1:{zmqPort}");
                 sub.Subscribe($"gamepad_{sessionId}");
-                Log($"[CvWorkerHost] Session {sessionId}: SUB socket bound on port {zmqPort}, topic 'gamepad_{sessionId}', thread {Environment.CurrentManagedThreadId}.");
+                sub.Subscribe($"cv_frame_{sessionId}");
+                Log($"[CvWorkerHost] Session {sessionId}: SUB socket bound on port {zmqPort}, topics 'gamepad_{sessionId}' + 'cv_frame_{sessionId}', thread {Environment.CurrentManagedThreadId}.");
                 socketReady.SetResult(true);
             }
             catch (Exception ex)
@@ -309,10 +314,19 @@ public class CvWorkerHost : IAsyncDisposable
                         break;
                     }
 
-                    // Receive multipart: [topic] [json payload]
+                    // Receive multipart: [topic] [payload]
                     if (sub.TryReceiveFrameString(TimeSpan.FromMilliseconds(100), out var topic) && topic is not null)
                     {
-                        if (sub.TryReceiveFrameString(TimeSpan.FromMilliseconds(50), out var json) && json is not null)
+                        if (topic.StartsWith("cv_frame_"))
+                        {
+                            // CV annotated frame — binary JPEG
+                            if (sub.TryReceiveFrameBytes(TimeSpan.FromMilliseconds(50), out var jpegBytes) && jpegBytes is not null)
+                            {
+                                missCount = 0;
+                                CvFrameReceived?.Invoke(sessionId, jpegBytes);
+                            }
+                        }
+                        else if (sub.TryReceiveFrameString(TimeSpan.FromMilliseconds(50), out var json) && json is not null)
                         {
                             missCount = 0;
                             var state = ParseGamepadState(json);

@@ -31,7 +31,7 @@ public class CaptureCardSource : IFrameSource
     public InputSourceType SourceType => InputSourceType.CaptureCard;
     public string SourceName => _deviceName;
     public bool IsCapturing => _isCapturing;
-    public int TargetFps { get; set; } = 60;
+    public int TargetFps { get; set; } = 120;
 
     public event Action<int, byte[]>? FrameReady;
 

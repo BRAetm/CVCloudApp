@@ -82,6 +82,9 @@ public class CdpGamepadInjector : IGamepadSink, IAsyncDisposable
     private readonly Dictionary<int, CdpConnection> _connections = new();
     private readonly object _connectionsLock = new();
 
+    /// <summary>Fired when a screencast frame arrives from CDP. (sessionId, jpegBytes)</summary>
+    public event Action<int, byte[]>? ScreencastFrameReady;
+
     // ---------------------------------------------------------------------------
     // Public API
     // ---------------------------------------------------------------------------
@@ -140,8 +143,8 @@ public class CdpGamepadInjector : IGamepadSink, IAsyncDisposable
         await EvaluateAsync(conn, InjectGamepadJs);
         Console.WriteLine($"[CdpGamepadInjector] Session {sessionId}: gamepad + visibility overrides injected.");
 
-        // NOW start the drain loop — all setup commands that need responses are done
-        conn.ReceiveLoop = Task.Run(() => DrainReceiveLoopAsync(sessionId, conn), cts.Token);
+        // NOW start the receive loop — handles screencast frames + drains other messages
+        conn.ReceiveLoop = Task.Run(() => ReceiveLoopAsync(sessionId, conn), cts.Token);
     }
 
     /// <summary>
@@ -179,6 +182,67 @@ public class CdpGamepadInjector : IGamepadSink, IAsyncDisposable
     {
         lock (_connectionsLock)
             return _connections.ContainsKey(sessionId);
+    }
+
+    /// <summary>
+    /// Starts streaming game frames from Chrome via CDP Page.startScreencast.
+    /// Frames arrive as base64 JPEG via the WebSocket and fire ScreencastFrameReady.
+    /// </summary>
+    public async Task StartScreencastAsync(int sessionId, int maxFps = 30, int quality = 80)
+    {
+        CdpConnection? conn;
+        lock (_connectionsLock)
+            _connections.TryGetValue(sessionId, out conn);
+
+        if (conn is null || conn.Socket.State != WebSocketState.Open)
+        {
+            Console.WriteLine($"[CdpScreencast] Session {sessionId}: no active CDP connection.");
+            return;
+        }
+
+        try
+        {
+            // Enable Page domain (required for screencast)
+            await SendCdpCommandAsync(conn, "Page.enable", new { });
+
+            await SendCdpCommandAsync(conn, "Page.startScreencast", new
+            {
+                format = "jpeg",
+                quality,
+                maxWidth = 960,
+                maxHeight = 540,
+                everyNthFrame = Math.Max(1, 60 / maxFps) // e.g. 2 = every other frame = 30fps
+            });
+
+            conn.ScreencastActive = true;
+            Console.WriteLine($"[CdpScreencast] Session {sessionId}: screencast started (quality={quality}, maxFps≈{maxFps})");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CdpScreencast] Session {sessionId}: start failed — {ex.Message}");
+        }
+    }
+
+    /// <summary>Stops the CDP screencast.</summary>
+    public async Task StopScreencastAsync(int sessionId)
+    {
+        CdpConnection? conn;
+        lock (_connectionsLock)
+            _connections.TryGetValue(sessionId, out conn);
+
+        if (conn is null) return;
+
+        try
+        {
+            conn.ScreencastActive = false;
+            if (conn.Socket.State == WebSocketState.Open)
+                await SendCdpCommandAsync(conn, "Page.stopScreencast", new { });
+            Console.WriteLine($"[CdpScreencast] Session {sessionId}: screencast stopped.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CdpScreencast] Session {sessionId}: stop failed — {ex.Message}");
+        }
     }
 
     /// <summary>Disconnects the CDP session and cleans up resources.</summary>
@@ -384,24 +448,113 @@ public class CdpGamepadInjector : IGamepadSink, IAsyncDisposable
         return sb.ToString();
     }
 
-    /// <summary>Drains incoming CDP messages to keep the WebSocket buffer clear.</summary>
-    private static async Task DrainReceiveLoopAsync(int sessionId, CdpConnection conn)
+    /// <summary>
+    /// Receives and processes CDP messages. Handles Page.screencastFrame events
+    /// (decodes base64 JPEG, fires ScreencastFrameReady, sends ack).
+    /// All other messages are drained/discarded.
+    /// </summary>
+    private async Task ReceiveLoopAsync(int sessionId, CdpConnection conn)
     {
-        var buffer = new byte[4096];
+        // Large buffer to handle screencast frames (base64 JPEG can be 100KB+)
+        var buffer = new byte[512_000];
+        int frameCount = 0;
+
         try
         {
             while (conn.Socket.State == WebSocketState.Open &&
                    !conn.Cts.Token.IsCancellationRequested)
             {
-                await conn.Socket.ReceiveAsync(
-                    new ArraySegment<byte>(buffer),
-                    conn.Cts.Token);
+                // Read full message (may span multiple fragments)
+                int totalBytes = 0;
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await conn.Socket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer, totalBytes, buffer.Length - totalBytes),
+                        conn.Cts.Token);
+                    totalBytes += result.Count;
+                } while (!result.EndOfMessage && totalBytes < buffer.Length);
+
+                if (result.MessageType != WebSocketMessageType.Text || totalBytes == 0)
+                    continue;
+
+                // Fast check for screencast frame before full JSON parse
+                var msgSpan = Encoding.UTF8.GetString(buffer, 0, totalBytes);
+
+                if (conn.ScreencastActive && msgSpan.Contains("Page.screencastFrame"))
+                {
+                    try
+                    {
+                        var msg = JObject.Parse(msgSpan);
+                        var method = msg["method"]?.ToString();
+
+                        if (method == "Page.screencastFrame")
+                        {
+                            var parms = msg["params"];
+                            var data = parms?["data"]?.ToString();        // base64 JPEG
+                            var sessId = parms?["sessionId"]?.Value<int>() ?? 0;
+
+                            if (data is not null)
+                            {
+                                var jpegBytes = Convert.FromBase64String(data);
+                                frameCount++;
+
+                                if (frameCount <= 3 || frameCount % 100 == 0)
+                                    Console.WriteLine($"[CdpScreencast] Session {sessionId}: frame #{frameCount} ({jpegBytes.Length} bytes)");
+
+                                // Fire event so FramePublisher can send to Python
+                                ScreencastFrameReady?.Invoke(sessionId, jpegBytes);
+                            }
+
+                            // ACK the frame so Chrome sends the next one
+                            _ = AckScreencastFrameAsync(conn, sessId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (frameCount <= 5)
+                            Console.WriteLine($"[CdpScreencast] Session {sessionId}: parse error — {ex.Message}");
+                    }
+                }
+                // All other messages: drain (ignore)
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             Console.WriteLine($"[CdpGamepadInjector] Session {sessionId}: receive loop ended — {ex.Message}");
+        }
+
+        Console.WriteLine($"[CdpScreencast] Session {sessionId}: receive loop exited ({frameCount} screencast frames total)");
+    }
+
+    /// <summary>Sends Page.screencastFrameAck so Chrome continues sending frames.</summary>
+    private async Task AckScreencastFrameAsync(CdpConnection conn, int frameSessionId)
+    {
+        if (!await conn.SendLock.WaitAsync(0)) return; // skip if busy
+        try
+        {
+            if (conn.Socket.State != WebSocketState.Open) return;
+
+            int id = Interlocked.Increment(ref conn.NextMsgId);
+            var payload = new
+            {
+                id,
+                method = "Page.screencastFrameAck",
+                @params = new { sessionId = frameSessionId }
+            };
+
+            var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(payload));
+            await conn.Socket.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                endOfMessage: true,
+                CancellationToken.None);
+        }
+        catch { }
+        finally
+        {
+            conn.SendLock.Release();
         }
     }
 
@@ -681,6 +834,7 @@ public class CdpGamepadInjector : IGamepadSink, IAsyncDisposable
         public readonly CancellationTokenSource Cts;
         public          int                   NextMsgId;
         public          Task                  ReceiveLoop = Task.CompletedTask;
+        public volatile bool                  ScreencastActive;
 
         public CdpConnection(ClientWebSocket socket, SemaphoreSlim sendLock,
                               CancellationTokenSource cts, int msgId)

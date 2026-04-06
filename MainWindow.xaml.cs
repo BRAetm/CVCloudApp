@@ -49,7 +49,8 @@ public partial class MainWindow : Window
         // Read recent entries from the debug log file
         try
         {
-            var logPath = @"C:\Users\brael\Documents\cvccloud\worker_debug.log";
+            var logPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud", "worker_debug.log");
             if (!System.IO.File.Exists(logPath)) return;
 
             var lines = System.IO.File.ReadAllLines(logPath);
@@ -72,6 +73,13 @@ public partial class MainWindow : Window
     }
 
     private void OnMenuExit(object sender, RoutedEventArgs e) => Close();
+
+    private void OnOpenScriptCreator(object sender, RoutedEventArgs e)
+    {
+        var vm = DataContext as UI.ViewModels.MainViewModel;
+        var creator = new UI.Views.MakeCvScriptWindow(vm) { Owner = this };
+        creator.Show();
+    }
 
     /// <summary>Refreshes the script list when the floating pill ComboBox opens.</summary>
     private void OnScriptDropDownOpened(object? sender, EventArgs e)

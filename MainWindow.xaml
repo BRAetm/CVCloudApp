@@ -6,9 +6,9 @@
         xmlns:converters="clr-namespace:CVCloudApp.UI.Converters"
         xmlns:models="clr-namespace:CVCloudApp.Models"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        Title="CVCloud"
-        Background="#1E1E1E"
-        Foreground="#D4D4D4"
+        Title="TM Labs — Built in the Lab"
+        Background="#0A0E1A"
+        Foreground="#C8D6E5"
         FontFamily="Segoe UI"
         FontSize="12"
         MinWidth="1280" MinHeight="720"
@@ -16,6 +16,17 @@
         WindowState="Maximized">
 
     <Window.Resources>
+        <!-- Override system colors so ComboBox/ListBox popups use dark theme -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#111B2E"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#C8D6E5"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#0D3B6E"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1565C0"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="#0D1525"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.MenuTextBrushKey}" Color="#C8D6E5"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.MenuHighlightBrushKey}" Color="#0D3B6E"/>
+
         <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <converters:StatusToStringConverter   x:Key="StatusToStr"/>
 
@@ -35,7 +46,7 @@
         <!-- Toolbar button style -->
         <Style x:Key="ToolBtn" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="Foreground" Value="#8BADC9"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -44,12 +55,12 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
+                                Padding="{TemplateBinding Padding}" CornerRadius="4">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#3E3E42"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#1A2744"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35"/>
@@ -62,18 +73,43 @@
 
         <!-- Panel header style -->
         <Style x:Key="PanelHeader" TargetType="Border">
-            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Background" Value="#0D1525"/>
             <Setter Property="Padding" Value="8,4"/>
         </Style>
 
-        <!-- Dark ComboBox -->
+        <!-- Dark ComboBox with visible dropdown -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#333337"/>
-            <Setter Property="Foreground" Value="#D4D4D4"/>
-            <Setter Property="BorderBrush" Value="#434346"/>
+            <Setter Property="Background" Value="#111B2E"/>
+            <Setter Property="Foreground" Value="#C8D6E5"/>
+            <Setter Property="BorderBrush" Value="#1E3050"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="FontSize" Value="11"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Background" Value="#111B2E"/>
+                        <Setter Property="Foreground" Value="#C8D6E5"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="#0D3B6E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#1565C0"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menu item dropdown fix -->
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#C8D6E5"/>
         </Style>
     </Window.Resources>
 
@@ -88,12 +124,12 @@
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- ROW 0: MENU BAR                                     -->
         <!-- ═══════════════════════════════════════════════════ -->
-        <Border Grid.Row="0" Background="#1E1E1E" Padding="0">
-            <Menu Background="#1E1E1E" Foreground="#D4D4D4" FontSize="12">
+        <Border Grid.Row="0" Background="#080C18" Padding="0">
+            <Menu Background="#080C18" Foreground="#C8D6E5" FontSize="12">
                 <Menu.ItemContainerStyle>
                     <Style TargetType="MenuItem">
-                        <Setter Property="Background" Value="#1E1E1E"/>
-                        <Setter Property="Foreground" Value="#D4D4D4"/>
+                        <Setter Property="Background" Value="#080C18"/>
+                        <Setter Property="Foreground" Value="#C8D6E5"/>
                         <Setter Property="Padding" Value="8,4"/>
                     </Style>
                 </Menu.ItemContainerStyle>
@@ -104,6 +140,7 @@
                 </MenuItem>
                 <MenuItem Header="View">
                     <MenuItem Header="CV Builder" Command="{Binding ToggleCvBuilderCommand}"/>
+                    <MenuItem Header="Make CV Script" Click="OnOpenScriptCreator"/>
                 </MenuItem>
                 <MenuItem Header="Plugins">
                     <MenuItem Header="OpenCV Capture" IsCheckable="True" IsChecked="True"/>
@@ -116,7 +153,7 @@
                     <MenuItem Header="GPC3" IsCheckable="True" IsChecked="{Binding IsGpcAvailable, Mode=OneWay}"/>
                 </MenuItem>
                 <MenuItem Header="Help">
-                    <MenuItem Header="About CVCloud v2.0"/>
+                    <MenuItem Header="About TM Vision v2.0"/>
                 </MenuItem>
             </Menu>
         </Border>
@@ -124,37 +161,36 @@
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- ROW 1: TOOLBAR                                      -->
         <!-- ═══════════════════════════════════════════════════ -->
-        <Border Grid.Row="1" Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Margin="4,2">
-                <Button Style="{StaticResource ToolBtn}" Command="{Binding AddSessionCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="+" FontSize="14" FontWeight="Bold" Foreground="#57A64A" Margin="0,0,4,0"/>
-                        <TextBlock Text="New Session"/>
-                    </StackPanel>
-                </Button>
-                <Border Width="1" Background="#3F3F46" Margin="6,4"/>
+        <Border Grid.Row="1" Background="#0D1525" BorderBrush="#152240" BorderThickness="0,0,0,1">
+            <Grid Margin="4,2">
+                <StackPanel Orientation="Horizontal">
+                    <!-- TM Labs logo -->
+                    <Image Source="/Assets/tmlogo.png" Height="50" Margin="6,0,16,0"
+                           VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                <!-- Capture controls -->
-                <TextBlock Text="Capture:" Foreground="#808080" FontSize="10" VerticalAlignment="Center" Margin="6,0,6,0"/>
-                <Button x:Name="BtnStartCapture" Style="{StaticResource ToolBtn}" Foreground="#57A64A" Content="&#x25B6; Start"/>
-                <Button x:Name="BtnStopCapture" Style="{StaticResource ToolBtn}" Foreground="#D69D45" Content="&#x25A0; Stop"/>
-                <Border Width="1" Background="#3F3F46" Margin="6,4"/>
+                    <Button Style="{StaticResource ToolBtn}" Command="{Binding AddSessionCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="+" FontSize="14" FontWeight="Bold" Foreground="#2196F3" Margin="0,0,4,0"/>
+                            <TextBlock Text="New Session"/>
+                        </StackPanel>
+                    </Button>
+                    <Border Width="1" Background="#152240" Margin="6,4"/>
+                    <Button Style="{StaticResource ToolBtn}" Click="OnOpenScriptCreator">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x270F;" FontSize="12" Foreground="#42A5F5" Margin="0,0,4,0"/>
+                            <TextBlock Text="Make CV Script"/>
+                        </StackPanel>
+                    </Button>
+                    <Border Width="1" Background="#152240" Margin="6,4"/>
 
-                <!-- Script controls -->
-                <TextBlock Text="Script:" Foreground="#808080" FontSize="10" VerticalAlignment="Center" Margin="6,0,6,0"/>
-                <Button Style="{StaticResource ToolBtn}" Foreground="#57A64A" Content="&#x25B6; Run"
-                        Command="{Binding SelectedSession.StartScriptCommand}"/>
-                <Button Style="{StaticResource ToolBtn}" Foreground="#CE9178" Content="&#x25A0; Stop"
-                        Command="{Binding SelectedSession.StopScriptCommand}"/>
-                <Border Width="1" Background="#3F3F46" Margin="6,4"/>
-
-                <!-- Device info -->
-                <TextBlock Text="Titan:" Foreground="#808080" FontSize="10" VerticalAlignment="Center" Margin="6,0,4,0"/>
-                <TextBlock Text="{Binding TitanDeviceName}" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"/>
-                <Border Width="1" Background="#3F3F46" Margin="6,4"/>
-                <TextBlock Text="GPC3:" Foreground="#808080" FontSize="10" VerticalAlignment="Center" Margin="6,0,4,0"/>
-                <TextBlock Text="Ready" Foreground="#57A64A" FontSize="10" VerticalAlignment="Center"/>
-            </StackPanel>
+                    <!-- Device info -->
+                    <TextBlock Text="Titan:" Foreground="#4A6A8A" FontSize="10" VerticalAlignment="Center" Margin="6,0,4,0"/>
+                    <TextBlock Text="{Binding TitanDeviceName}" Foreground="#42A5F5" FontSize="10" VerticalAlignment="Center"/>
+                    <Border Width="1" Background="#152240" Margin="6,4"/>
+                    <TextBlock Text="GPC3:" Foreground="#4A6A8A" FontSize="10" VerticalAlignment="Center" Margin="6,0,4,0"/>
+                    <TextBlock Text="Ready" Foreground="#2196F3" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- ═══════════════════════════════════════════════════ -->
@@ -169,95 +205,51 @@
                 <ColumnDefinition Width="280" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ═══ LEFT COLUMN: File Explorer + CV Python ═══ -->
-            <Grid Grid.Column="0" Background="#252526">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- File Explorer Panel -->
-                <DockPanel Grid.Row="0">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <TextBlock Text="FILE EXPLORER" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                    </Border>
-                    <ListBox ItemsSource="{Binding SelectedSession.AvailableScripts}"
-                             SelectedItem="{Binding SelectedSession.SelectedScriptPath, Mode=TwoWay}"
-                             Background="#252526" BorderThickness="0" Foreground="#D4D4D4"
-                             FontSize="11" Padding="4"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="6,3"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="ListBoxItem">
-                                            <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="#094771"/>
-                                                </Trigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="#2A2D2E"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#x1F4C4; " FontSize="10"/>
-                                    <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-
-                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#3F3F46"/>
-
-                <!-- CV Python Panel -->
-                <DockPanel Grid.Row="2">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="CV PYTHON" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                            <TextBlock Text=" | " Foreground="#3F3F46"/>
-                            <TextBlock Text="{Binding SelectedSession.ActiveScriptName}" Foreground="#569CD6" FontSize="10"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="#252526" Padding="8">
-                        <StackPanel>
-                            <TextBlock Text="Script:" Foreground="#808080" FontSize="10" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding SelectedSession.AvailableScripts}"
-                                      SelectedItem="{Binding SelectedSession.SelectedScriptPath, Mode=TwoWay}"
-                                      DropDownOpened="OnRowScriptDropDownOpened"
-                                      Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <Button Content="&#x25B6; Run Script" Style="{StaticResource ToolBtn}"
-                                        Foreground="#57A64A" Padding="8,4"
-                                        Command="{Binding SelectedSession.StartScriptCommand}"/>
-                                <Button Content="&#x25A0; Stop" Style="{StaticResource ToolBtn}"
-                                        Foreground="#D69D45" Padding="8,4" Margin="4,0,0,0"
-                                        Command="{Binding SelectedSession.StopScriptCommand}"/>
+            <!-- ═══ LEFT COLUMN: File Explorer (scripts list) ═══ -->
+            <DockPanel Grid.Column="0" Background="#0C1220">
+                <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
+                    <TextBlock Text="FILE EXPLORER" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                </Border>
+                <ListBox ItemsSource="{Binding SelectedSession.AvailableScripts}"
+                         SelectedItem="{Binding SelectedSession.SelectedScriptPath, Mode=TwoWay}"
+                         Background="#0C1220" BorderThickness="0" Foreground="#C8D6E5"
+                         FontSize="11" Padding="4"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="6,3"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#0D3B6E"/>
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#111D30"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#x1F4C4; " FontSize="10"/>
+                                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
-
-                            <TextBlock Text="Status:" Foreground="#808080" FontSize="10" Margin="0,0,0,2"/>
-                            <TextBlock Text="{Binding SelectedSession.Status, Converter={StaticResource StatusToStr}}"
-                                       Foreground="#569CD6" FontSize="11"/>
-                        </StackPanel>
-                    </Border>
-                </DockPanel>
-            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
 
             <!-- Left splitter -->
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="#3F3F46"/>
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="#152240"/>
 
             <!-- ═══ CENTER: Video Display + OpenCV Capture tabs ═══ -->
             <Grid Grid.Column="2">
@@ -271,22 +263,24 @@
                 <DockPanel Grid.Row="0">
                     <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="VIDEO DISPLAY" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                            <TextBlock Text=" | " Foreground="#3F3F46"/>
-                            <TextBlock Text="{Binding SelectedSession.SessionName}" Foreground="#569CD6" FontSize="10"/>
-                            <TextBlock Text=" | " Foreground="#3F3F46"/>
+                            <TextBlock Text="VIDEO DISPLAY" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                            <TextBlock Text=" | " Foreground="#152240"/>
+                            <TextBlock Text="{Binding SelectedSession.SessionName}" Foreground="#42A5F5" FontSize="10"/>
+                            <TextBlock Text=" | " Foreground="#152240"/>
                             <TextBlock Text="{Binding SelectedSession.Status, Converter={StaticResource StatusToStr}}"
-                                       Foreground="#57A64A" FontSize="10"/>
+                                       Foreground="#2196F3" FontSize="10"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Feed tiles grid (shows all active sessions) -->
-                    <Grid Background="#1E1E1E">
-                        <!-- Empty state -->
+                    <Grid Background="#0A0E1A">
+                        <!-- Empty state with big logo -->
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Visibility="{Binding ActiveCount, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                            <TextBlock Text="No Active Sessions" Foreground="#555555" FontSize="18" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Click + New Session or press Ctrl+N" Foreground="#3F3F46" FontSize="11"
+                            <Image Source="/Assets/tmlogo.png" Width="400" Margin="0,0,0,20"
+                                   RenderOptions.BitmapScalingMode="HighQuality" Opacity="0.6"/>
+                            <TextBlock Text="No Active Sessions" Foreground="#1E3050" FontSize="18" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Click + New Session or press Ctrl+N" Foreground="#152240" FontSize="11"
                                        HorizontalAlignment="Center" Margin="0,8,0,0"/>
                         </StackPanel>
 
@@ -307,200 +301,225 @@
                     </Grid>
                 </DockPanel>
 
-                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#3F3F46"/>
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#152240"/>
 
                 <!-- Output Panel (bottom center) -->
-                <DockPanel Grid.Row="2" Background="#1E1E1E">
+                <DockPanel Grid.Row="2" Background="#0A0E1A">
                     <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="OUTPUT" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                            <TextBlock Text=" | " Foreground="#3F3F46"/>
-                            <TextBlock x:Name="OutputCountLabel" Text="Worker Log" Foreground="#808080" FontSize="10"/>
+                            <TextBlock Text="OUTPUT" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                            <TextBlock Text=" | " Foreground="#152240"/>
+                            <TextBlock x:Name="OutputCountLabel" Text="Worker Log" Foreground="#4A6A8A" FontSize="10"/>
                             <Button Content="Clear" Click="OnClearOutput" Style="{StaticResource ToolBtn}"
-                                    Foreground="#808080" FontSize="9" Padding="6,1" Margin="12,0,0,0"/>
+                                    Foreground="#4A6A8A" FontSize="9" Padding="6,1" Margin="12,0,0,0"/>
                         </StackPanel>
                     </Border>
                     <ScrollViewer x:Name="OutputScroller" VerticalScrollBarVisibility="Auto"
-                                  Background="#1E1E1E" Padding="8,4">
+                                  Background="#0A0E1A" Padding="8,4">
                         <TextBlock x:Name="OutputLog"
-                                   Foreground="#808080"
+                                   Foreground="#4A6A8A"
                                    FontFamily="Cascadia Code, Consolas, Courier New"
                                    FontSize="11"
                                    TextWrapping="Wrap"
-                                   Text="CVCloud v2.0 ready. Capture · CV · GPC3 · Titan"/>
+                                   Text="TM Vision v2.0 ready. Capture · CV · GPC3 · Titan"/>
                     </ScrollViewer>
                 </DockPanel>
             </Grid>
 
             <!-- Right splitter -->
-            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Center" Background="#3F3F46"/>
+            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Center" Background="#152240"/>
 
-            <!-- ═══ RIGHT COLUMN: Sessions + Device Monitor + Capture Settings ═══ -->
-            <Grid Grid.Column="4" Background="#252526">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <!-- ═══ RIGHT COLUMN: CV Python + Sessions + Device Monitor ═══ -->
+            <Grid Grid.Column="4" Background="#0C1220">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
 
-                <!-- OpenCV Capture Settings Panel -->
-                <DockPanel Grid.Row="0">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <TextBlock Text="OPENCV CAPTURE" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                    </Border>
-                    <Border Background="#252526" Padding="8,6">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <TextBlock Text="Source:" Foreground="#808080" FontSize="10" Width="55" VerticalAlignment="Center"/>
-                                <TextBlock Text="DirectShow / OpenCV" Foreground="#569CD6" FontSize="10" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <TextBlock Text="Res:" Foreground="#808080" FontSize="10" Width="55" VerticalAlignment="Center"/>
-                                <TextBlock Text="1920x1080" Foreground="#D4D4D4" FontSize="10" VerticalAlignment="Center"/>
-                            </StackPanel>
+                        <!-- CV PYTHON — script controls (single place, no duplicates) -->
+                        <Border Style="{StaticResource PanelHeader}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="FPS:" Foreground="#808080" FontSize="10" Width="55" VerticalAlignment="Center"/>
-                                <TextBlock Text="60" Foreground="#D4D4D4" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="CV PYTHON" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                                <TextBlock Text=" | " Foreground="#152240"/>
+                                <TextBlock Text="{Binding SelectedSession.ActiveScriptName}" Foreground="#42A5F5" FontSize="10"/>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </DockPanel>
-
-                <!-- Sessions List -->
-                <DockPanel Grid.Row="1">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="SESSIONS" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                            <TextBlock Text="  " Foreground="#3F3F46"/>
-                            <TextBlock Foreground="#569CD6" FontSize="10">
-                                <Run Text="{Binding ActiveCount, Mode=OneWay}"/><Run Text=" active"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                    <ListBox ItemsSource="{Binding Slots}"
-                             SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
-                             ItemContainerStyle="{StaticResource PlainListBoxItem}"
-                             Background="#252526" BorderThickness="0"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border Height="44" Margin="2,1" CornerRadius="3"
-                                        Visibility="{Binding IsOccupied, Converter={StaticResource BoolToVis}}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="#094771"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Grid Margin="8,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="4"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- Status bar -->
-                                        <Border Grid.Column="0" CornerRadius="2" Margin="0,2" Background="{Binding StatusColor}"/>
-
-                                        <!-- Info -->
-                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Label}" Foreground="#D4D4D4" FontSize="11" FontWeight="SemiBold"/>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Status, Converter={StaticResource StatusToStr}}"
-                                                           Foreground="#808080" FontSize="9.5"/>
-                                                <TextBlock Text=" · " Foreground="#3F3F46" FontSize="9.5"
-                                                           Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}"/>
-                                                <TextBlock Text="{Binding ActiveScriptName}" Foreground="#569CD6" FontSize="9.5"
-                                                           Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}"/>
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <!-- Close button -->
-                                        <Button Grid.Column="2" Content="&#x2715;" FontSize="9"
-                                                Foreground="#808080" Command="{Binding RemoveCommand}"
-                                                VerticalAlignment="Center" Cursor="Hand">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="Bd" Background="Transparent" Padding="4,2" CornerRadius="3">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="Bd" Property="Background" Value="#3E3E42"/>
-                                                            <Setter Property="Foreground" Value="#F14C4C"/>
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-
-                <!-- Device Monitor Panel -->
-                <DockPanel Grid.Row="2">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <TextBlock Text="DEVICE MONITOR" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                    </Border>
-                    <Border Background="#252526" Padding="8,6" MinHeight="60">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                <TextBlock Text="ViGEm:" Foreground="#808080" FontSize="10" Width="60"/>
-                                <TextBlock Text="Connected" Foreground="#57A64A" FontSize="10"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                <TextBlock Text="Titan:" Foreground="#808080" FontSize="10" Width="60"/>
-                                <TextBlock Text="{Binding TitanDeviceName}" Foreground="#569CD6" FontSize="10"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="GPC3:" Foreground="#808080" FontSize="10" Width="60"/>
-                                <TextBlock Foreground="#57A64A" FontSize="10">
-                                    <Run Text="Available"/>
+                        </Border>
+                        <Border Background="#0C1220" Padding="8,6">
+                            <StackPanel>
+                                <TextBlock Text="Script:" Foreground="#4A6A8A" FontSize="10" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding SelectedSession.AvailableScripts}"
+                                          SelectedItem="{Binding SelectedSession.SelectedScriptPath, Mode=TwoWay}"
+                                          DropDownOpened="OnRowScriptDropDownOpened"
+                                          Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button Content="&#x25B6; Run" Style="{StaticResource ToolBtn}"
+                                            Foreground="#2196F3" Padding="12,5"
+                                            Command="{Binding SelectedSession.StartScriptCommand}"/>
+                                    <Button Content="&#x25A0; Stop" Style="{StaticResource ToolBtn}"
+                                            Foreground="#FF9800" Padding="12,5" Margin="6,0,0,0"
+                                            Command="{Binding SelectedSession.StopScriptCommand}"/>
+                                </StackPanel>
+                                <TextBlock Foreground="#4A6A8A" FontSize="10">
+                                    <Run Text="Status: "/>
+                                    <Run Text="{Binding SelectedSession.Status, Converter={StaticResource StatusToStr}, Mode=OneWay}" Foreground="#42A5F5"/>
                                 </TextBlock>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </DockPanel>
+                        </Border>
 
-                <!-- Titan Bridge Panel -->
-                <DockPanel Grid.Row="3">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                        <TextBlock Text="TITAN BRIDGE" Foreground="#808080" FontSize="10" FontWeight="SemiBold"/>
-                    </Border>
-                    <Border Background="#252526" Padding="8,6" MinHeight="40">
-                        <StackPanel>
+                        <!-- SESSIONS -->
+                        <Border Style="{StaticResource PanelHeader}" Margin="0,2,0,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Device:" Foreground="#808080" FontSize="10" Width="60"/>
-                                <TextBlock Text="{Binding TitanDeviceName}" Foreground="#D4D4D4" FontSize="10"/>
+                                <TextBlock Text="SESSIONS" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                                <TextBlock Text="  " Foreground="#152240"/>
+                                <TextBlock Foreground="#42A5F5" FontSize="10">
+                                    <Run Text="{Binding ActiveCount, Mode=OneWay}"/><Run Text=" active"/>
+                                </TextBlock>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </DockPanel>
+                        </Border>
+                        <ListBox ItemsSource="{Binding Slots}"
+                                 SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                                 ItemContainerStyle="{StaticResource PlainListBoxItem}"
+                                 Background="#0C1220" BorderThickness="0" MinHeight="50"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Height="40" Margin="2,1" CornerRadius="3"
+                                            Visibility="{Binding IsOccupied, Converter={StaticResource BoolToVis}}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Background" Value="#0D3B6E"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Grid Margin="8,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="4"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" CornerRadius="2" Margin="0,2" Background="{Binding StatusColor}"/>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Label}" Foreground="#C8D6E5" FontSize="11" FontWeight="SemiBold"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Status, Converter={StaticResource StatusToStr}}"
+                                                               Foreground="#4A6A8A" FontSize="9.5"/>
+                                                    <TextBlock Text=" · " Foreground="#152240" FontSize="9.5"
+                                                               Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}"/>
+                                                    <TextBlock Text="{Binding ActiveScriptName}" Foreground="#42A5F5" FontSize="9.5"
+                                                               Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="&#x2715;" FontSize="9"
+                                                    Foreground="#4A6A8A" Command="{Binding RemoveCommand}"
+                                                    VerticalAlignment="Center" Cursor="Hand">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Background="Transparent" Padding="4,2" CornerRadius="3">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="Background" Value="#1A2744"/>
+                                                                <Setter Property="Foreground" Value="#EF5350"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- OPENCV CAPTURE -->
+                        <Border Style="{StaticResource PanelHeader}" Margin="0,2,0,0">
+                            <TextBlock Text="OPENCV CAPTURE" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                        <Border Background="#0C1220" Padding="8,6">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Source:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="DirectShow / OpenCV" Foreground="#42A5F5" FontSize="10"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Res:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="1920x1080" Foreground="#C8D6E5" FontSize="10"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="FPS:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="120" Foreground="#C8D6E5" FontSize="10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- TITAN BRIDGE -->
+                        <Border Style="{StaticResource PanelHeader}" Margin="0,2,0,0">
+                            <TextBlock Text="TITAN BRIDGE" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                        <Border Background="#0C1220" Padding="8,6">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Device:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="{Binding TitanDeviceName}" Foreground="#C8D6E5" FontSize="10"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="GPC3:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="Available" Foreground="#2196F3" FontSize="10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- DEVICE MONITOR -->
+                        <Border Style="{StaticResource PanelHeader}" Margin="0,2,0,0">
+                            <TextBlock Text="DEVICE MONITOR" Foreground="#4A6A8A" FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                        <Border Background="#0C1220" Padding="8,6">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                    <TextBlock Text="ViGEm:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="Connected" Foreground="#2196F3" FontSize="10"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                    <TextBlock Text="Titan:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="{Binding TitanDeviceName}" Foreground="#42A5F5" FontSize="10"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="GPC3:" Foreground="#4A6A8A" FontSize="10" Width="55"/>
+                                    <TextBlock Text="Available" Foreground="#2196F3" FontSize="10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Grid>
 
         <!-- ═══════════════════════════════════════════════════ -->
         <!-- ROW 3: STATUS BAR                                   -->
         <!-- ═══════════════════════════════════════════════════ -->
-        <Border Grid.Row="3" Background="#007ACC" Padding="8,3">
+        <Border Grid.Row="3" Padding="8,3">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#0D47A1" Offset="0"/>
+                    <GradientStop Color="#1565C0" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <Grid>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="CVCloud v2.0" Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,16,0"/>
-                    <TextBlock Foreground="#CCE5FF" FontSize="10">
+                    <Image Source="/Assets/tmlogo.png" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="TM Labs v2.0" Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="0,0,16,0"/>
+                    <TextBlock Foreground="#BBDEFB" FontSize="10">
                         <Run Text="Sessions: "/><Run Text="{Binding ActiveCount, Mode=OneWay}" FontWeight="SemiBold"/>
                         <Run Text="  |  CV Scripts: "/><Run Text="{Binding ScriptCount, Mode=OneWay}" FontWeight="SemiBold"/>
-                        <Run Text="  |  Capture: 1920x1080 @ 60fps"/>
+                        <Run Text="  |  Capture: 1920x1080 @ 120fps"/>
                     </TextBlock>
                 </StackPanel>
-                <TextBlock HorizontalAlignment="Right" Foreground="#CCE5FF" FontSize="10">
+                <TextBlock HorizontalAlignment="Right" Foreground="#BBDEFB" FontSize="10">
                     <Run Text="Titan: "/><Run Text="{Binding TitanDeviceName, Mode=OneWay}"/>
                     <Run Text="  |  GPC3: Ready"/>
                 </TextBlock>

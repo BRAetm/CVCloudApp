@@ -118,7 +118,11 @@ public class GamepadInputRelay : IDisposable
         // Only send if session is connected
         if (!_gamepadSink.IsConnected(sessionId)) return;
 
-        _gamepadSink.SendInput(sessionId, state);
+        // WebView2 must be accessed from the UI thread
+        System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
+        {
+            try { _gamepadSink.SendInput(sessionId, state); } catch { }
+        });
     }
 
     // ---------------------------------------------------------------------------

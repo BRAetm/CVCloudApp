@@ -26,12 +26,30 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Catch all unhandled exceptions so we can see what crashed
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            var ex = args.ExceptionObject as Exception;
+            var crashLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud", "crash.log");
+            try { Directory.CreateDirectory(Path.GetDirectoryName(crashLog)!); File.WriteAllText(crashLog, $"[{DateTime.Now}] UNHANDLED:\n{ex}"); } catch { }
+            Console.Error.WriteLine($"[CRASH] {ex}");
+        };
+        DispatcherUnhandledException += (s, args) =>
+        {
+            var crashLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud", "crash.log");
+            try { Directory.CreateDirectory(Path.GetDirectoryName(crashLog)!); File.AppendAllText(crashLog, $"[{DateTime.Now}] DISPATCHER:\n{args.Exception}\n\n"); } catch { }
+            Console.Error.WriteLine($"[CRASH] {args.Exception}");
+            // Don't set args.Handled — let non-fatal errors bubble but log them
+        };
+
         // Helios-style performance: boost process priority + disable power throttling
         SetPerformanceOptimizations();
 
         // Clear stale debug logs from previous run
-        ClearLogFile(@"C:\Users\brael\Documents\cvccloud\worker_debug.log");
-        ClearLogFile(@"C:\Users\brael\Documents\cvccloud\wgc_debug.log");
+        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud");
+        Directory.CreateDirectory(logDir);
+        ClearLogFile(Path.Combine(logDir, "worker_debug.log"));
+        ClearLogFile(Path.Combine(logDir, "wgc_debug.log"));
 
         // Kill any stale CVCloudApp processes that may be holding ZMQ ports
         KillStalePorts(5580, 5590);

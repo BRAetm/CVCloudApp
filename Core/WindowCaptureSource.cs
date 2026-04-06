@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace CVCloudApp.Core;
 
@@ -15,9 +16,9 @@ namespace CVCloudApp.Core;
 public record AppWindowInfo(nint Hwnd, string Title, string ProcessName, int Pid);
 
 /// <summary>
-/// Captures frames from any application window using BitBlt (PrintWindow).
-/// Used for Xbox Remote Play app, PS Remote Play app, or any other windowed game.
-/// Similar to Helios's XboxRemotePlay.dll and PSRemotePlay.dll capture backend.
+/// Captures frames from any application window.
+/// Uses Windows Graphics Capture (WGC) for UWP apps (Xbox) and
+/// PrintWindow (GDI) for regular apps (PS Remote Play, etc.).
 /// </summary>
 public class WindowCaptureSource : IFrameSource
 {
@@ -29,10 +30,22 @@ public class WindowCaptureSource : IFrameSource
     private Task? _captureLoop;
     private volatile bool _isCapturing;
 
+    // WGC capture (used for UWP apps like Xbox)
+    private WindowCapture? _wgcCapture;
+    private volatile byte[]? _wgcLatestJpeg;
+
+    // Shared memory bridge for zero-copy frame transfer to Python
+    private static readonly Lazy<SharedFrameBridge> _sharedBridge = new(() =>
+    {
+        var bridge = new SharedFrameBridge();
+        bridge.Start();
+        return bridge;
+    });
+
     public InputSourceType SourceType => InputSourceType.WindowCapture;
     public string SourceName => _windowTitle;
     public bool IsCapturing => _isCapturing;
-    public int TargetFps { get; set; } = 30;
+    public int TargetFps { get; set; } = 60;
 
     public event Action<int, byte[]>? FrameReady;
 
@@ -41,6 +54,21 @@ public class WindowCaptureSource : IFrameSource
         _sessionId = sessionId;
         _hwnd = hwnd;
         _windowTitle = windowTitle;
+    }
+
+    /// <summary>Checks if the target window belongs to a UWP/MSIX app that needs WGC capture.</summary>
+    private bool IsUwpWindow()
+    {
+        try
+        {
+            GetWindowThreadProcessId(_hwnd, out uint pid);
+            var proc = Process.GetProcessById((int)pid);
+            var name = proc.ProcessName.ToLowerInvariant();
+            // Xbox app, GameBar, and ApplicationFrameHost are UWP
+            return name is "xboxpcapp" or "xbox" or "gamebar" or "xboxapp" or "msxboxapp"
+                or "applicationframehost";
+        }
+        catch { return false; }
     }
 
     // ---------------------------------------------------------------------------
@@ -180,13 +208,34 @@ public class WindowCaptureSource : IFrameSource
         if (!IsWindow(_hwnd))
             throw new InvalidOperationException($"Window handle 0x{_hwnd:X} is no longer valid");
 
-        _cts = new CancellationTokenSource();
         _isCapturing = true;
-        _captureLoop = Task.Factory.StartNew(
-            () => CaptureLoop(_cts.Token),
-            _cts.Token,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default);
+
+        if (IsUwpWindow())
+        {
+            // Use WGC for UWP apps (Xbox Remote Play, etc.)
+            Console.WriteLine($"[WindowCapture] Session {_sessionId}: UWP detected, using WGC for '{_windowTitle}'");
+            _wgcCapture = new WindowCapture();
+            _wgcCapture.FrameReady += OnWgcFrameReady;
+            _wgcCapture.Start(_hwnd);
+
+            // Start a pump thread to publish frames at target FPS
+            _cts = new CancellationTokenSource();
+            _captureLoop = Task.Factory.StartNew(
+                () => WgcPumpLoop(_cts.Token),
+                _cts.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+        }
+        else
+        {
+            // Use PrintWindow for regular apps (PS Remote Play, etc.)
+            _cts = new CancellationTokenSource();
+            _captureLoop = Task.Factory.StartNew(
+                () => CaptureLoop(_cts.Token),
+                _cts.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+        }
 
         Console.WriteLine($"[WindowCapture] Session {_sessionId}: Started capturing '{_windowTitle}' at {TargetFps}fps");
         return Task.CompletedTask;
@@ -200,8 +249,70 @@ public class WindowCaptureSource : IFrameSource
         _cts?.Dispose();
         _cts = null;
 
+        if (_wgcCapture is not null)
+        {
+            _wgcCapture.FrameReady -= OnWgcFrameReady;
+            _wgcCapture.Dispose();
+            _wgcCapture = null;
+        }
+
         Console.WriteLine($"[WindowCapture] Session {_sessionId}: Stopped.");
         return Task.CompletedTask;
+    }
+
+    /// <summary>Called by WGC when a new frame arrives — writes to shared memory + JPEG fallback.</summary>
+    private void OnWgcFrameReady(BitmapSource frame)
+    {
+        try
+        {
+            // Write to shared memory (zero-copy path for Python scripts)
+            _sharedBridge.Value.WriteFrame(frame);
+
+            // Also encode JPEG for the C# UI preview / ZMQ fallback
+            BitmapSource source = frame;
+            if (frame.PixelWidth > 1280)
+            {
+                double scale = 960.0 / frame.PixelWidth;
+                var scaled = new TransformedBitmap(frame, new System.Windows.Media.ScaleTransform(scale, scale));
+                scaled.Freeze();
+                source = scaled;
+            }
+
+            var encoder = new JpegBitmapEncoder { QualityLevel = 75 };
+            encoder.Frames.Add(BitmapFrame.Create(source));
+            using var ms = new MemoryStream(120_000);
+            encoder.Save(ms);
+            _wgcLatestJpeg = ms.ToArray();
+        }
+        catch { }
+    }
+
+    /// <summary>Publishes the latest WGC frame at the target FPS.</summary>
+    private void WgcPumpLoop(CancellationToken ct)
+    {
+        int frameCount = 0;
+        double frameInterval = 1000.0 / TargetFps;
+        var sw = Stopwatch.StartNew();
+
+        while (!ct.IsCancellationRequested)
+        {
+            var frameStart = sw.ElapsedMilliseconds;
+
+            var jpeg = _wgcLatestJpeg;
+            if (jpeg is not null && jpeg.Length > 0)
+            {
+                FrameReady?.Invoke(_sessionId, jpeg);
+                frameCount++;
+                if (frameCount <= 3 || frameCount % 50 == 0)
+                    Console.WriteLine($"[WindowCapture] Session {_sessionId}: WGC frame #{frameCount} ({jpeg.Length} bytes)");
+            }
+
+            var elapsed = sw.ElapsedMilliseconds - frameStart;
+            var sleepMs = (int)(frameInterval - elapsed);
+            if (sleepMs > 0) Thread.Sleep(sleepMs);
+        }
+
+        Console.WriteLine($"[WindowCapture] Session {_sessionId}: WGC pump ended ({frameCount} frames)");
     }
 
     // ---------------------------------------------------------------------------
@@ -226,7 +337,7 @@ public class WindowCaptureSource : IFrameSource
                     break;
                 }
 
-                var jpegBytes = CaptureWindowToJpeg(_hwnd);
+                var jpegBytes = CaptureWindowToJpeg(_hwnd, _sharedBridge.Value);
                 if (jpegBytes is not null && jpegBytes.Length > 0)
                 {
                     FrameReady?.Invoke(_sessionId, jpegBytes);
@@ -249,8 +360,16 @@ public class WindowCaptureSource : IFrameSource
         Console.WriteLine($"[WindowCapture] Session {_sessionId}: Loop ended ({frameCount} frames)");
     }
 
-    /// <summary>Captures a window to JPEG bytes using PrintWindow + GDI.</summary>
-    private static byte[]? CaptureWindowToJpeg(nint hwnd)
+    // Reusable JPEG encoder + params to avoid per-frame allocation
+    private static readonly ImageCodecInfo? _jpegCodec = Array.Find(
+        ImageCodecInfo.GetImageEncoders(), e => e.MimeType == "image/jpeg");
+    private static readonly EncoderParameters _jpegParams = new(1)
+    {
+        Param = { [0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 88L) }
+    };
+
+    /// <summary>Captures a window to JPEG bytes using PrintWindow + GDI. Also writes to shared memory.</summary>
+    private static byte[]? CaptureWindowToJpeg(nint hwnd, SharedFrameBridge? bridge = null)
     {
         if (!GetClientRect(hwnd, out RECT rect)) return null;
         int width = rect.Right - rect.Left;
@@ -271,12 +390,31 @@ public class WindowCaptureSource : IFrameSource
         try
         {
             using var bmp = Image.FromHbitmap(hBitmap);
-            using var ms = new MemoryStream();
-            var jpegEncoder = ImageCodecInfo.GetImageEncoders()[1]; // JPEG
-            var encoderParams = new EncoderParameters(1);
-            encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 70L);
-            bmp.Save(ms, jpegEncoder, encoderParams);
+
+            // Downscale to half res for faster encode + smaller ZMQ transfer
+            Bitmap target;
+            if (width > 1280)
+            {
+                int newW = width / 2;
+                int newH = height / 2;
+                target = new Bitmap(newW, newH);
+                using var g = Graphics.FromImage(target);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                g.DrawImage(bmp, 0, 0, newW, newH);
+            }
+            else
+            {
+                target = (Bitmap)bmp;
+            }
+
+            using var ms = new MemoryStream(120_000);
+            if (_jpegCodec is not null)
+                target.Save(ms, _jpegCodec, _jpegParams);
+            else
+                target.Save(ms, ImageFormat.Jpeg);
             result = ms.ToArray();
+
+            if (target != bmp) target.Dispose();
         }
         catch { }
 

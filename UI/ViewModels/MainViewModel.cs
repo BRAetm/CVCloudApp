@@ -19,7 +19,8 @@ namespace CVCloudApp.UI.ViewModels;
 /// <summary>File-based debug logging for WGC pipeline.</summary>
 static class DebugLog
 {
-    private static readonly string _path = @"C:\Users\brael\Documents\cvccloud\wgc_debug.log";
+    private static readonly string _path = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "cvccloud", "wgc_debug.log");
     public static void Write(string msg)
     {
         var line = $"[{DateTime.Now:HH:mm:ss.fff}] {msg}";
@@ -68,9 +69,18 @@ public class MainViewModel : INotifyPropertyChanged
         {
             // Send to WebView2 (cloud gaming)
             _dispatcher.BeginInvoke(() => _webViewHost.SendInput(sessionId, state));
+
+            // Send to ViGEm virtual controller
+            _padManager.ApplyEvent(sessionId, ToGamepadEvent(state));
+
             // Also send to Titan/Cronus if connected
             if (_titanBridge.IsConnected)
                 _titanBridge.SendState(state);
+        };
+
+        _workerHost.CvFrameReceived += (sessionId, jpegBytes) =>
+        {
+            _dispatcher.BeginInvoke(() => _webViewHost.ShowCvFrame(sessionId, jpegBytes));
         };
 
         _workerHost.WorkerDied += OnWorkerDied;
@@ -81,16 +91,13 @@ public class MainViewModel : INotifyPropertyChanged
 
         // Pre-populate 10 fixed feed slots
         Slots = new ObservableCollection<SessionViewModel>();
+        OccupiedSlots = new ObservableCollection<SessionViewModel>();
         for (int i = 0; i < MaxSessions; i++)
             Slots.Add(new SessionViewModel(i));
 
         AddSessionCommand = new RelayCommand(
             async () => await AddSessionAsync(),
             () => !IsAddingSession && Slots.Any(s => !s.IsOccupied));
-
-        // Filtered view — only occupied slots appear in the feed grid
-        OccupiedSlots = CollectionViewSource.GetDefaultView(Slots);
-        OccupiedSlots.Filter = obj => obj is SessionViewModel vm && vm.IsOccupied;
 
         CvBuilder = new CvBuilderViewModel(Slots);
         ToggleCvBuilderCommand = new RelayCommand(() => IsCvBuilderOpen = !IsCvBuilderOpen);
@@ -103,8 +110,8 @@ public class MainViewModel : INotifyPropertyChanged
     /// <summary>All 4 feed slots — always has 4 items.</summary>
     public ObservableCollection<SessionViewModel> Slots { get; }
 
-    /// <summary>Filtered view containing only occupied slots for the feed grid.</summary>
-    public System.ComponentModel.ICollectionView OccupiedSlots { get; }
+    /// <summary>Occupied slots for the feed grid — incrementally updated to avoid destroying tiles.</summary>
+    public ObservableCollection<SessionViewModel> OccupiedSlots { get; }
 
     /// <summary>Number of UniformGrid columns based on occupied count.</summary>
     public int GridColumns => ActiveCount switch
@@ -177,10 +184,21 @@ public class MainViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(GridColumns));
     }
 
-    /// <summary>Refreshes occupied slots view AND counts — call only when slots are added/removed.</summary>
+    /// <summary>Incrementally syncs OccupiedSlots with Slots — adds/removes without destroying existing tiles.</summary>
     public void RefreshGrid()
     {
-        OccupiedSlots.Refresh();
+        // Add newly occupied slots
+        foreach (var slot in Slots)
+        {
+            if (slot.IsOccupied && !OccupiedSlots.Contains(slot))
+                OccupiedSlots.Add(slot);
+        }
+        // Remove cleared slots
+        for (int i = OccupiedSlots.Count - 1; i >= 0; i--)
+        {
+            if (!OccupiedSlots[i].IsOccupied)
+                OccupiedSlots.RemoveAt(i);
+        }
         RefreshCounts();
     }
 
@@ -393,6 +411,26 @@ public class MainViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Connect virtual pad and start 60fps relay for this session
+        try { _padManager.ConnectPad(vm.SessionId); } catch (Exception ex) { DebugLog.Write($"[OnStartScript] ViGEm pad connect failed (non-fatal): {ex.Message}"); }
+        _inputRelay.StartSession(vm.SessionId);
+
+        // For cloud play sessions: start screencast to stream game frames to Python.
+        // Screencast travels over local pipes (Chrome→C#→Python), NOT the wifi.
+        // Crank quality high — clearer frames = much better CV detection from a distance.
+        if (vm.CloudSession.SourceType == InputSourceType.WebView2)
+        {
+            try
+            {
+                await _webViewHost.StartScreencastAsync(vm.SessionId, maxFps: 12, quality: 90);
+                DebugLog.Write($"[OnStartScript] Session {vm.SessionId}: screencast 12fps q90 1080p — fresh frames, no queue lag.");
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Write($"[OnStartScript] Session {vm.SessionId}: screencast start failed (non-fatal): {ex.Message}");
+            }
+        }
+
         _dispatcher.Invoke(() =>
         {
             vm.SetStatus(SessionStatus.Running);
@@ -415,6 +453,13 @@ public class MainViewModel : INotifyPropertyChanged
     private void OnWorkerDied(int sessionId, int exitCode)
     {
         DebugLog.Write($"[WorkerDied] Session {sessionId}: worker exited with code {exitCode}.");
+
+        // Send neutral state to release any stuck inputs
+        var neutral = new GamepadState();
+        try { _webViewHost.SendInput(sessionId, neutral); } catch { }
+        try { _padManager.ApplyEvent(sessionId, ToGamepadEvent(neutral)); } catch { }
+        if (_titanBridge.IsConnected)
+            try { _titanBridge.SendState(neutral); } catch { }
 
         _dispatcher.BeginInvoke(() =>
         {
@@ -448,6 +493,19 @@ public class MainViewModel : INotifyPropertyChanged
     {
         var sessionId = vm.SessionId;
         DebugLog.Write($"[OnStopScript] Session {sessionId}: stopping...");
+
+        // Send a neutral (all-zero) gamepad state to release any held inputs
+        var neutral = new GamepadState();
+        try { _webViewHost.SendInput(sessionId, neutral); } catch { }
+        try { _padManager.ApplyEvent(sessionId, ToGamepadEvent(neutral)); } catch { }
+        if (_titanBridge.IsConnected)
+            try { _titanBridge.SendState(neutral); } catch { }
+
+        // Disconnect virtual pad, stop relay timer, hide CV overlay, stop screencast
+        _inputRelay.StopSession(sessionId);
+        try { _padManager.DisconnectPad(sessionId); } catch (Exception ex) { DebugLog.Write($"[OnStopScript] ViGEm pad disconnect failed (non-fatal): {ex.Message}"); }
+        _webViewHost.HideCvOverlay(sessionId);
+        _ = _webViewHost.StopScreencastAsync(sessionId);
 
         // Immediately update UI — don't wait for async cleanup
         vm.SetStatus(SessionStatus.Connected);
@@ -484,6 +542,10 @@ public class MainViewModel : INotifyPropertyChanged
         vm.Clear();
         RefreshGrid();  // Slot became empty — update the feed grid
 
+        // Clean up virtual pad and relay
+        _inputRelay.StopSession(sessionId);
+        try { _padManager.DisconnectPad(sessionId); } catch { }
+
         // Fire-and-forget cleanup on background thread
         _ = Task.Run(async () =>
         {
@@ -492,6 +554,44 @@ public class MainViewModel : INotifyPropertyChanged
         });
 
         Console.WriteLine($"[MainViewModel] Slot {vm.SlotIndex} cleared.");
+    }
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    /// <summary>Converts Web Gamepad API format to ViGEm GamepadEvent format.</summary>
+    private static GamepadEvent ToGamepadEvent(GamepadState s)
+    {
+        ushort buttons = 0;
+        // Standard Gamepad button mapping → Xbox 360 bitmask
+        if (s.Buttons[0])  buttons |= Xbox360Buttons.A;
+        if (s.Buttons[1])  buttons |= Xbox360Buttons.B;
+        if (s.Buttons[2])  buttons |= Xbox360Buttons.X;
+        if (s.Buttons[3])  buttons |= Xbox360Buttons.Y;
+        if (s.Buttons[4])  buttons |= Xbox360Buttons.LeftShoulder;
+        if (s.Buttons[5])  buttons |= Xbox360Buttons.RightShoulder;
+        // buttons[6] = LT, buttons[7] = RT (handled as triggers below)
+        if (s.Buttons[8])  buttons |= Xbox360Buttons.Back;
+        if (s.Buttons[9])  buttons |= Xbox360Buttons.Start;
+        if (s.Buttons[10]) buttons |= Xbox360Buttons.LeftThumb;
+        if (s.Buttons[11]) buttons |= Xbox360Buttons.RightThumb;
+        if (s.Buttons[12]) buttons |= Xbox360Buttons.Up;
+        if (s.Buttons[13]) buttons |= Xbox360Buttons.Down;
+        if (s.Buttons[14]) buttons |= Xbox360Buttons.Left;
+        if (s.Buttons[15]) buttons |= Xbox360Buttons.Right;
+        if (s.Buttons[16]) buttons |= Xbox360Buttons.Guide;
+
+        return new GamepadEvent
+        {
+            LeftStickX   = s.Axes[0],
+            LeftStickY   = s.Axes[1],
+            RightStickX  = s.Axes[2],
+            RightStickY  = s.Axes[3],
+            LeftTrigger  = s.Buttons[6] ? 1f : 0f,
+            RightTrigger = s.Buttons[7] ? 1f : 0f,
+            Buttons      = buttons,
+        };
     }
 
     // ---------------------------------------------------------------------------

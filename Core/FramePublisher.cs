@@ -19,8 +19,11 @@ public sealed class FramePublisher : IDisposable
     public void Start()
     {
         _pub = new PublisherSocket();
+        // SNDHWM = 1: only buffer 1 outgoing frame, drop the rest
+        // This prevents lag when Python falls behind the screencast rate
+        _pub.Options.SendHighWatermark = 1;
         _pub.Bind($"tcp://127.0.0.1:{PubPort}");
-        Console.WriteLine($"[FramePublisher] PUB socket bound on port {PubPort}.");
+        Console.WriteLine($"[FramePublisher] PUB socket bound on port {PubPort} (SNDHWM=1, drops stale frames).");
     }
 
     /// <summary>Publishes a frame for the given session. Topic is "frame_{sessionId}".</summary>
@@ -62,7 +65,7 @@ public sealed class FramePublisher : IDisposable
     /// <summary>Encodes a frozen BitmapSource as JPEG bytes for efficient ZMQ transfer.</summary>
     private static byte[] BitmapSourceToJpeg(BitmapSource bmp)
     {
-        var encoder = new JpegBitmapEncoder { QualityLevel = 80 };
+        var encoder = new JpegBitmapEncoder { QualityLevel = 85 };
         encoder.Frames.Add(BitmapFrame.Create(bmp));
         using var ms = new MemoryStream();
         encoder.Save(ms);

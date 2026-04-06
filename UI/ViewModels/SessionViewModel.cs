@@ -302,12 +302,12 @@ public class SessionViewModel : INotifyPropertyChanged, IDisposable
     {
         StatusColor = Status switch
         {
-            SessionStatus.Idle       => new SolidColorBrush(Color.FromRgb(0x3D, 0x38, 0x60)),
-            SessionStatus.Connecting => new SolidColorBrush(Color.FromRgb(0xA7, 0x8B, 0xFA)),
-            SessionStatus.Connected  => new SolidColorBrush(Color.FromRgb(0x8B, 0x5C, 0xF6)),
-            SessionStatus.Running    => new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99)),
-            SessionStatus.Error      => new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
-            _                        => new SolidColorBrush(Color.FromRgb(0x3D, 0x38, 0x60)),
+            SessionStatus.Idle       => new SolidColorBrush(Color.FromRgb(0x1E, 0x3A, 0x5F)),
+            SessionStatus.Connecting => new SolidColorBrush(Color.FromRgb(0x42, 0xA5, 0xF5)),
+            SessionStatus.Connected  => new SolidColorBrush(Color.FromRgb(0x21, 0x96, 0xF3)),
+            SessionStatus.Running    => new SolidColorBrush(Color.FromRgb(0x00, 0xE6, 0x76)),
+            SessionStatus.Error      => new SolidColorBrush(Color.FromRgb(0xEF, 0x53, 0x50)),
+            _                        => new SolidColorBrush(Color.FromRgb(0x1E, 0x3A, 0x5F)),
         };
     }
 

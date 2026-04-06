@@ -15,16 +15,16 @@
         <Border.Style>
             <Style TargetType="Border">
                 <Setter Property="CornerRadius" Value="12"/>
-                <Setter Property="BorderBrush" Value="#1E1B30"/>
+                <Setter Property="BorderBrush" Value="#0D1B3A"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Background" Value="#0C0A14"/>
+                <Setter Property="Background" Value="#080E1A"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                        <Setter Property="BorderBrush" Value="#7C3AED"/>
+                        <Setter Property="BorderBrush" Value="#1565C0"/>
                         <Setter Property="BorderThickness" Value="2"/>
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsOccupied}" Value="True">
-                        <Setter Property="Background" Value="#0A0910"/>
+                        <Setter Property="Background" Value="#060A14"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -35,19 +35,19 @@
             <Border Visibility="{Binding IsOccupied, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#0E0C18" Offset="0"/>
+                        <GradientStop Color="#0A1020" Offset="0"/>
                         <GradientStop Color="#0A0812" Offset="1"/>
                     </LinearGradientBrush>
                 </Border.Background>
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SlotLabel}"
-                               Foreground="#16142E"
+                               Foreground="#0D1B3A"
                                FontSize="56"
                                FontWeight="ExtraBold"
                                FontFamily="Segoe UI"
                                HorizontalAlignment="Center"/>
                     <TextBlock Text="EMPTY"
-                               Foreground="#16142E"
+                               Foreground="#0D1B3A"
                                FontSize="10"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"
@@ -67,22 +67,22 @@
                 <Border Grid.Row="0">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#0E0C18" Offset="0"/>
-                            <GradientStop Color="#100E1C" Offset="1"/>
+                            <GradientStop Color="#0A1020" Offset="0"/>
+                            <GradientStop Color="#0C1225" Offset="1"/>
                         </LinearGradientBrush>
                     </Border.Background>
                     <Grid Margin="10,0,8,0">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <!-- Session number badge -->
                             <Border CornerRadius="4" Padding="5,1" Margin="0,0,6,0"
-                                    Background="#1A1730">
+                                    Background="#0D2240">
                                 <TextBlock Text="{Binding SlotLabel}"
-                                           Foreground="#A78BFA"
+                                           Foreground="#42A5F5"
                                            FontSize="10" FontWeight="Bold"
                                            FontFamily="Segoe UI"/>
                             </Border>
                             <TextBlock Text="{Binding SessionName}"
-                                       Foreground="#D0CCE8"
+                                       Foreground="#C8D6E5"
                                        FontSize="11" FontWeight="SemiBold"
                                        FontFamily="Segoe UI"
                                        TextTrimming="CharacterEllipsis"
@@ -107,27 +107,52 @@
                 <Border Grid.Row="0" VerticalAlignment="Bottom" Height="1">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#1E1B30" Offset="0"/>
-                            <GradientStop Color="#14122A" Offset="0.5"/>
-                            <GradientStop Color="#1E1B30" Offset="1"/>
+                            <GradientStop Color="#0D1B3A" Offset="0"/>
+                            <GradientStop Color="#0A1530" Offset="0.5"/>
+                            <GradientStop Color="#0D1B3A" Offset="1"/>
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
 
                 <!-- WebView2 container -->
-                <Grid Grid.Row="1" x:Name="WebViewContainer" Background="#08070E">
+                <Grid Grid.Row="1" x:Name="WebViewContainer" Background="#060A14">
                     <StackPanel x:Name="WaitingPanel"
                                 HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Width="40" Height="40" CornerRadius="20" Margin="0,0,0,8"
-                                Background="#0E0C18">
+                                Background="#0A1020">
                             <TextBlock Text="&#x1F3AE;" FontSize="18"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="Connecting..."
-                                   Foreground="#3D3860"
+                                   Foreground="#1E3A5F"
                                    FontSize="11"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
+
+                    <!-- CV overlay — shows annotated frame from Python when script is running -->
+                    <Image x:Name="CvOverlayImage"
+                           Stretch="Uniform"
+                           Opacity="0.85"
+                           Visibility="Collapsed"
+                           RenderOptions.BitmapScalingMode="LowQuality"
+                           HorizontalAlignment="Stretch"
+                           VerticalAlignment="Stretch"
+                           IsHitTestVisible="False"/>
+
+                    <!-- CV status badge -->
+                    <Border x:Name="CvBadge"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,4,8,0"
+                            Padding="6,2"
+                            CornerRadius="4"
+                            Background="#CC000000"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Fill="#34D399" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="CvBadgeText" Text="CV" Foreground="#34D399" FontSize="9" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
                 <!-- Footer: script name (only visible when running) -->
@@ -135,17 +160,17 @@
                         Visibility="{Binding ActiveScriptName, Converter={StaticResource BoolToVis}}">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#0E0C18" Offset="0"/>
-                            <GradientStop Color="#100E1C" Offset="1"/>
+                            <GradientStop Color="#0A1020" Offset="0"/>
+                            <GradientStop Color="#0C1225" Offset="1"/>
                         </LinearGradientBrush>
                     </Border.Background>
                     <StackPanel Orientation="Horizontal">
-                        <Border CornerRadius="3" Padding="4,1" Background="#1A2E1A" Margin="0,0,6,0">
+                        <Border CornerRadius="3" Padding="4,1" Background="#0D2B4A" Margin="0,0,6,0">
                             <TextBlock Text="LIVE" Foreground="#34D399" FontSize="8"
                                        FontWeight="Bold"/>
                         </Border>
                         <TextBlock Text="{Binding ActiveScriptName}"
-                                   Foreground="#C084FC"
+                                   Foreground="#64B5F6"
                                    FontSize="10"
                                    FontFamily="Segoe UI"
                                    VerticalAlignment="Center"

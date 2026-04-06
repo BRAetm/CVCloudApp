@@ -65,6 +65,66 @@ public class WebViewSessionHost : IGamepadSink, IAsyncDisposable
         tile?.SendGamepadInput(state);
     }
 
+    /// <summary>Shows a CV-annotated frame overlay on the tile.</summary>
+    public void ShowCvFrame(int sessionId, byte[] jpegBytes)
+    {
+        IWebViewTile? tile;
+        lock (_lock)
+            _tiles.TryGetValue(sessionId, out tile);
+        tile?.ShowCvFrame(jpegBytes);
+    }
+
+    /// <summary>Hides the CV overlay on the tile.</summary>
+    public void HideCvOverlay(int sessionId)
+    {
+        IWebViewTile? tile;
+        lock (_lock)
+            _tiles.TryGetValue(sessionId, out tile);
+        tile?.HideCvOverlay();
+    }
+
+    /// <summary>Fired when a screencast frame arrives. (sessionId, jpegBytes)</summary>
+    public event Action<int, byte[]>? ScreencastFrameReady;
+
+    /// <summary>Starts streaming game frames from the embedded WebView2 via CDP screencast.</summary>
+    public async Task StartScreencastAsync(int sessionId, int maxFps = 30, int quality = 80)
+    {
+        IWebViewTile? tile;
+        lock (_lock)
+            _tiles.TryGetValue(sessionId, out tile);
+
+        if (tile is null || !tile.IsWebViewReady)
+        {
+            Console.WriteLine($"[WebViewHost] Session {sessionId}: no WebView2 for screencast.");
+            return;
+        }
+
+        try
+        {
+            await tile.StartScreencastAsync(sessionId, maxFps, quality,
+                (sid, jpeg) => ScreencastFrameReady?.Invoke(sid, jpeg));
+            Console.WriteLine($"[WebViewHost] Session {sessionId}: screencast started (fps≈{maxFps}, q={quality})");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WebViewHost] Session {sessionId}: screencast failed — {ex.Message}");
+        }
+    }
+
+    /// <summary>Stops the screencast for a session.</summary>
+    public async Task StopScreencastAsync(int sessionId)
+    {
+        IWebViewTile? tile;
+        lock (_lock)
+            _tiles.TryGetValue(sessionId, out tile);
+
+        if (tile is not null && tile.IsWebViewReady)
+        {
+            try { await tile.StopScreencastAsync(); }
+            catch (Exception ex) { Console.WriteLine($"[WebViewHost] Session {sessionId}: stop screencast failed — {ex.Message}"); }
+        }
+    }
+
     /// <summary>Destroys the WebView2 in the tile for the given session.</summary>
     public Task DisconnectAsync(int sessionId)
     {

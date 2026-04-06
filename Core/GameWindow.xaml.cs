@@ -12,7 +12,8 @@ namespace CVCloudApp.Core;
 /// <summary>Borderless WPF window hosting a WebView2 control for Xbox Cloud Gaming.</summary>
 public partial class GameWindow : Window
 {
-    private const string UserDataRoot = @"C:\Users\brael\AppData\Local\CVCloudApp\WebView2";
+    private static readonly string UserDataRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp", "WebView2");
 
     // Same JS as CdpGamepadInjector — installs fake gamepad + visibility overrides
     private const string InjectGamepadJs = @"(function() {

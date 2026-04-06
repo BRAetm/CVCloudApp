@@ -13,7 +13,8 @@ public class ChromeLauncher : IDisposable
 {
     private const string XboxCloudUrl  = "https://www.xbox.com/en-US/play";
     private const int    CdpBasePort   = 9222;
-    private const string UserDataRoot  = @"C:\Users\brael\AppData\Local\CVCloudApp";
+    private static readonly string UserDataRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp");
 
     private static readonly string[] ChromeCandidatePaths =
     {

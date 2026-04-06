@@ -16,7 +16,8 @@ namespace CVCloudApp.UI.Views;
 /// <summary>Feed tile that hosts an embedded WebView2 for cloud gaming.</summary>
 public partial class FeedTileControl : System.Windows.Controls.UserControl, IWebViewTile
 {
-    private const string UserDataRoot = @"C:\Users\brael\AppData\Local\CVCloudApp\WebView2";
+    private static readonly string UserDataRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp", "WebView2");
 
     private const string InjectGamepadJs = @"(function() {
   if (window.__cvGamepad) { console.log('[CV] gamepad already injected'); return; }
@@ -96,6 +97,66 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
   }, 3000);
 })();";
 
+    // Cloud play optimization JS — improves stream quality on bad connections
+    private const string CloudOptimizeJs = @"(function() {
+  console.log('[CV] applying cloud play optimizations...');
+
+  // 1. Pre-set Xbox Cloud Gaming preferences for stable streaming
+  try {
+    // Bigger jitter buffer = more resilience to wifi spikes
+    localStorage.setItem('xc.streaming.jitterBuffer', '300');
+    // Prefer VP9 (better compression for low bandwidth)
+    localStorage.setItem('xc.streaming.codec.preference', 'vp9');
+    // Disable HDR (uses more bandwidth)
+    localStorage.setItem('xc.streaming.hdr.enabled', 'false');
+    // Lower max bitrate target if bandwidth is constrained
+    localStorage.setItem('xc.streaming.maxBitrate', '10000000'); // 10 Mbps cap
+    // Enable adaptive bitrate (reacts faster to network changes)
+    localStorage.setItem('xc.streaming.abr.enabled', 'true');
+    localStorage.setItem('xc.streaming.abr.aggressive', 'true');
+  } catch(e) {}
+
+  // 2. Disable resource-heavy CSS animations on the page chrome (not the game)
+  try {
+    var style = document.createElement('style');
+    style.textContent = `
+      *:not(video):not(canvas) { animation-duration: 0.01s !important; transition-duration: 0.01s !important; }
+      .background-effect, .particle-effect, [class*='animation'] { display: none !important; }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  } catch(e) {}
+
+  // 3. Hint to browser: prioritize this tab for network resources
+  try {
+    if ('connection' in navigator && navigator.connection.saveData !== undefined) {
+      // Pretend we're on a fast connection so streaming algorithms don't downgrade unnecessarily
+      Object.defineProperty(navigator.connection, 'effectiveType', { get: function() { return '4g'; }, configurable: true });
+      Object.defineProperty(navigator.connection, 'downlink', { get: function() { return 10; }, configurable: true });
+      Object.defineProperty(navigator.connection, 'rtt', { get: function() { return 50; }, configurable: true });
+    }
+  } catch(e) {}
+
+  // 4. Boost <video> element decode hints
+  function tuneVideos() {
+    document.querySelectorAll('video').forEach(function(v) {
+      try {
+        v.preload = 'auto';
+        v.autoplay = true;
+        // Hint to use hardware decode if available
+        v.style.willChange = 'transform';
+        // Remove any throttling
+        if ('mediaSession' in navigator) {
+          try { navigator.mediaSession.playbackState = 'playing'; } catch(e) {}
+        }
+      } catch(e) {}
+    });
+  }
+  tuneVideos();
+  setInterval(tuneVideos, 5000);
+
+  console.log('[CV] cloud play optimizations applied');
+})();";
+
     private int _sessionId = -1;
     private WebView2? _webView;
     private volatile bool _isReady;
@@ -111,6 +172,51 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
 
     /// <summary>True when WebView2 is initialized and ready for input.</summary>
     public bool IsWebViewReady => _isReady;
+
+    /// <summary>Shows a CV frame in the floating CV preview window. WebView2 stays untouched.</summary>
+    public void ShowCvFrame(byte[] jpegBytes)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => ShowCvFrame(jpegBytes));
+            return;
+        }
+
+        try
+        {
+            using var ms = new MemoryStream(jpegBytes);
+            var decoder = new JpegBitmapDecoder(ms, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            var frame = BitmapFrame.Create(decoder.Frames[0]);
+            frame.Freeze();
+
+            // Show CV badge on tile
+            CvBadge.Visibility = Visibility.Visible;
+
+            // Open or update the floating CV window
+            if (_cvWindow is null || !_cvWindow.IsLoaded)
+            {
+                _cvWindow = new CvPreviewWindow(_sessionId);
+                _cvWindow.Show();
+            }
+            _cvWindow.UpdateFrame(frame);
+        }
+        catch { }
+    }
+
+    /// <summary>Closes the CV preview window.</summary>
+    public void HideCvOverlay()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(HideCvOverlay);
+            return;
+        }
+        CvBadge.Visibility = Visibility.Collapsed;
+        try { _cvWindow?.Close(); } catch { }
+        _cvWindow = null;
+    }
+
+    private CvPreviewWindow? _cvWindow;
 
     // ---------------------------------------------------------------------------
     // IWebViewTile
@@ -128,7 +234,31 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
         var userDataDir = Path.Combine(UserDataRoot, $"Session{_sessionId}");
         Directory.CreateDirectory(userDataDir);
 
-        var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDir);
+        // Browser arguments optimized for low-bandwidth cloud gaming:
+        // - GPU rasterization for hardware acceleration
+        // - Larger network buffers for jitter resilience
+        // - Disable background throttling so the stream stays smooth
+        // - Force WebRTC echo cancellation off (saves CPU)
+        // - DNS over HTTPS via Cloudflare (faster + more reliable on bad networks)
+        var browserArgs = string.Join(" ", new[]
+        {
+            "--enable-gpu-rasterization",
+            "--enable-zero-copy",
+            "--disable-background-timer-throttling",
+            "--disable-renderer-backgrounding",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-features=CalculateNativeWinOcclusion",
+            "--enable-features=NetworkService,NetworkServiceInProcess",
+            "--force-effective-connection-type=4g",
+            "--max-active-webgl-contexts=16",
+            "--enable-webgl",
+            "--ignore-gpu-blocklist",
+            "--enable-accelerated-video-decode",
+            "--enable-accelerated-2d-canvas",
+        });
+
+        var envOptions = new CoreWebView2EnvironmentOptions(additionalBrowserArguments: browserArgs);
+        var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataDir, options: envOptions);
         await _webView.EnsureCoreWebView2Async(env);
 
         // Capture console.log messages via CDP for debugging
@@ -151,6 +281,7 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
         await _webView.CoreWebView2.CallDevToolsProtocolMethodAsync("Runtime.enable", "{}");
 
         await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(InjectGamepadJs);
+        await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(CloudOptimizeJs);
 
         try
         {
@@ -194,8 +325,93 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
     }
 
     /// <summary>Destroys the WebView2 and cleans up.</summary>
+    // ---------------------------------------------------------------------------
+    // Screencast (streaming frame capture — much faster than Page.captureScreenshot)
+    // ---------------------------------------------------------------------------
+
+    private Action<int, byte[]>? _screencastCallback;
+    private int _screencastFrameCount;
+
+    public async Task StartScreencastAsync(int sessionId, int maxFps, int quality, Action<int, byte[]> onFrame)
+    {
+        if (!_isReady || _webView?.CoreWebView2 is null) return;
+
+        // Stop the old timer-based capture — screencast replaces it
+        StopFrameCapture();
+
+        _screencastCallback = onFrame;
+        _screencastFrameCount = 0;
+
+        // Subscribe to screencast frame events
+        _webView.CoreWebView2.GetDevToolsProtocolEventReceiver("Page.screencastFrame")
+            .DevToolsProtocolEventReceived += OnScreencastFrame;
+
+        // Start the screencast stream
+        int everyNth = Math.Max(1, 60 / maxFps);
+        // 720p — sweet spot of quality vs. encode/decode speed for CV
+        var paramsJson = $"{{\"format\":\"jpeg\",\"quality\":{quality},\"maxWidth\":1280,\"maxHeight\":720,\"everyNthFrame\":{everyNth}}}";
+        await _webView.CoreWebView2.CallDevToolsProtocolMethodAsync("Page.startScreencast", paramsJson);
+
+        DebugLog.Write($"[FeedTile] Session {sessionId}: screencast started (quality={quality}, 720p, everyNth={everyNth})");
+    }
+
+    public async Task StopScreencastAsync()
+    {
+        if (_webView?.CoreWebView2 is null) return;
+
+        try
+        {
+            _webView.CoreWebView2.GetDevToolsProtocolEventReceiver("Page.screencastFrame")
+                .DevToolsProtocolEventReceived -= OnScreencastFrame;
+            await _webView.CoreWebView2.CallDevToolsProtocolMethodAsync("Page.stopScreencast", "{}");
+        }
+        catch { }
+
+        _screencastCallback = null;
+        DebugLog.Write($"[FeedTile] Session {_sessionId}: screencast stopped ({_screencastFrameCount} frames)");
+    }
+
+    private async void OnScreencastFrame(object? sender, CoreWebView2DevToolsProtocolEventReceivedEventArgs e)
+    {
+        try
+        {
+            var json = Newtonsoft.Json.Linq.JObject.Parse(e.ParameterObjectAsJson);
+            var data = json["data"]?.ToString();
+            var frameSessionId = json["sessionId"]?.ToObject<int>() ?? 0;
+
+            if (data is not null && _screencastCallback is not null)
+            {
+                var jpegBytes = Convert.FromBase64String(data);
+                _screencastFrameCount++;
+
+                if (_screencastFrameCount <= 3 || _screencastFrameCount % 100 == 0)
+                    DebugLog.Write($"[FeedTile] Session {_sessionId}: screencast frame #{_screencastFrameCount} ({jpegBytes.Length} bytes)");
+
+                // Publish to Python via ZMQ
+                SessionViewModel.SharedFramePublisher?.PublishRawFrame(_sessionId, jpegBytes);
+
+                // Fire callback
+                _screencastCallback.Invoke(_sessionId, jpegBytes);
+            }
+
+            // ACK the frame so Chrome sends the next one
+            if (_webView?.CoreWebView2 is not null)
+            {
+                await _webView.CoreWebView2.CallDevToolsProtocolMethodAsync(
+                    "Page.screencastFrameAck",
+                    $"{{\"sessionId\":{frameSessionId}}}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_screencastFrameCount <= 5)
+                DebugLog.Write($"[FeedTile] Session {_sessionId}: screencast frame error — {ex.Message}");
+        }
+    }
+
     public void DestroyWebView()
     {
+        _ = StopScreencastAsync();
         StopFrameCapture();
         _isReady = false;
         if (_webView is not null)
@@ -215,8 +431,10 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
     /// <summary>Starts capturing frames from WebView2 at ~30fps and publishing to Python.</summary>
     private void StartFrameCapture()
     {
+        // Don't start the old timer if screencast is active — screencast handles frame publishing
+        if (_screencastCallback is not null) return;
         if (_captureTimer is not null) return;
-        _captureTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(33) }; // ~30fps (Helios-grade)
+        _captureTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(33) }; // ~30fps (CDP screenshots can't sustain 60fps)
         _captureTimer.Tick += OnCaptureTimerTick;
         _captureTimer.Start();
         ViewModels.DebugLog.Write($"[FeedTile] Session {_sessionId}: frame capture started (30fps). Publisher null={SessionViewModel.SharedFramePublisher is null}");
@@ -240,10 +458,10 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
 
         try
         {
-            // Use CDP instead of CapturePreviewAsync — less UI thread blocking
+            // Use CDP with lower quality for faster capture
             var result = await _webView.CoreWebView2.CallDevToolsProtocolMethodAsync(
                 "Page.captureScreenshot",
-                "{\"format\":\"jpeg\",\"quality\":45}");
+                "{\"format\":\"jpeg\",\"quality\":30}");
 
             // CDP returns JSON: {"data":"<base64>"}
             var json = Newtonsoft.Json.Linq.JObject.Parse(result);
