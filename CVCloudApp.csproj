@@ -9,6 +9,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- Exclude zen-coder research folder from compilation -->
+  <ItemGroup>
+    <Compile Remove="zen-coder\**" />
+    <Page Remove="zen-coder\**" />
+    <None Remove="zen-coder\**" />
+    <Resource Remove="zen-coder\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="HidSharp" Version="2.1.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
