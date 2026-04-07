@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <AssemblyName>ZenStudio</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>True</UseWPF>
+    <TargetFramework>net481</TargetFramework>
+    <Prefer32Bit>True</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>11.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="a4e-l6--54n--g1--8.a--am--n-u-s-m8jq-" />
+    <None Remove="w4ia-----xqj--x-17.--y-jw-l--0-9h--d-" />
+    <None Remove="-q1pu--r-1---2uw-0.4msrgx-----0--w-3i" />
+    <None Remove="4jjmsy-p0--mp4-wv3.-u-w8--6---4-ttk-c" />
+    <None Remove="6-v5---8h-o-y-i-am.j1g-o8-9-f--t5i6ne" />
+    <None Remove="wf-o-2-t-x8y-s-h-e.-6mf----t-33y-j8-p" />
+    <EmbeddedResource Include="a4e-l6--54n--g1--8.a--am--n-u-s-m8jq-" LogicalName="a4el654ng18.aamnusm8jq" />
+    <EmbeddedResource Include="w4ia-----xqj--x-17.--y-jw-l--0-9h--d-" LogicalName="w4iaxqjx17.yjwl09hd" />
+    <EmbeddedResource Include="-q1pu--r-1---2uw-0.4msrgx-----0--w-3i" LogicalName="q1pur12uw0.4msrgx0w3i" />
+    <EmbeddedResource Include="4jjmsy-p0--mp4-wv3.-u-w8--6---4-ttk-c" LogicalName="4jjmsyp0mp4wv3.uw864ttkc" />
+    <EmbeddedResource Include="6-v5---8h-o-y-i-am.j1g-o8-9-f--t5i6ne" LogicalName="6v58hoyiam.j1go89ft5i6ne" />
+    <EmbeddedResource Include="wf-o-2-t-x8y-s-h-e.-6mf----t-33y-j8-p" LogicalName="wfo2tx8yshe.6mft33yj8p" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="WindowsBase" />
+    <Reference Include="MahApps.Metro" />
+    <Reference Include="System.Web" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="Microsoft.AI.ServerTelemetryChannel" />
+    <Reference Include="Microsoft.ApplicationInsights" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="INIFileParser" />
+    <Reference Include="System.Management" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="ICSharpCode.AvalonEdit" />
+    <Reference Include="Telerik.Windows.Controls" />
+    <Reference Include="Telerik.Windows.Controls.Navigation" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="MoreLinq" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Security" />
+  </ItemGroup>
+</Project>

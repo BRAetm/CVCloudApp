@@ -1,0 +1,13 @@
+using System;
+
+namespace ZenStudio.Annotations;
+
+[Flags]
+public enum ImplicitUseKindFlags
+{
+	Default = 7,
+	A_0098_0098_008F_009B_0095_0096_0095_008E_0099_0090 = 1,
+	A_009A_008B_009D_0088_009D_0091_0092_0087_009A_0091 = 2,
+	A_008D_009C_0095_0099_0099_008D_009A_008E_0094_009A = 4,
+	A_0090_009B_0088_0087_0091_0093_0097_008E_0093_0089 = 8
+}

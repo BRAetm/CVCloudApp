@@ -1,0 +1,12 @@
+# Don't commit Cronus's proprietary binaries
+*.exe
+*.dll
+*.pdb
+extracted/
+ZenStudio_Setup_*.exe
+
+# Build outputs
+bin/
+obj/
+__pycache__/
+*.pyc

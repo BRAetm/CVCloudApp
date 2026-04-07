@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <AssemblyName>ZenLinkConfigurator</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>True</UseWPF>
+    <TargetFramework>net481</TargetFramework>
+    <Prefer32Bit>True</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>11.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="-0-6----sj-kx-n---.-pgm-t---7j-5j-scj" />
+    <None Remove="-o-k-----fpa-sc8-a.18--4--x---c9-j-0-" />
+    <None Remove="r-k1---td-v6vw--va.----r--0---j--n-jn" />
+    <None Remove="1-t-----e----6kf-1.d--ue1-0dm8q-hr2--" />
+    <None Remove="oe--qo-903-jt----h.y-butv-f---dcnqod3" />
+    <EmbeddedResource Include="-0-6----sj-kx-n---.-pgm-t---7j-5j-scj" LogicalName="̀0̂6̗̂̅̅sj̍kx̅n̓̏̑.̀pgm̅t̆̎̒7j̀5j̃scj" />
+    <EmbeddedResource Include="-o-k-----fpa-sc8-a.18--4--x---c9-j-0-" LogicalName="̄ȍḱ̋̃̓̓fpa̖sc8̒a.18̗̑4̍̄x̃̑̂c9̒j̒0̀" />
+    <EmbeddedResource Include="r-k1---td-v6vw--va.----r--0---j--n-jn" LogicalName="r̒k1̀̋̕td́v6vw̉̔va.̘̒̆̌r̍̌0̀̒̕j̉̍n̂jn" />
+    <EmbeddedResource Include="1-t-----e----6kf-1.d--ue1-0dm8q-hr2--" LogicalName="1̉t̓̉̉̉́è̒̈̒6kf̎1.d̎̀ue1̊0dm8q̀hr2̘̕" />
+    <EmbeddedResource Include="oe--qo-903-jt----h.y-butv-f---dcnqod3" LogicalName="oe̐̕qó903̅jt̗̒̓̊h.y̐butv̂f̙̖̃dcnqod3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="MahApps.Metro" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="ManagedWlanApi" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+</Project>
