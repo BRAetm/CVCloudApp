@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Manages WebView2 tiles embedded in the feed grid for cloud gaming sessions.</summary>
 public class WebViewSessionHost : IGamepadSink, IAsyncDisposable
@@ -109,6 +109,34 @@ public class WebViewSessionHost : IGamepadSink, IAsyncDisposable
         {
             Console.WriteLine($"[WebViewHost] Session {sessionId}: screencast failed — {ex.Message}");
         }
+    }
+
+    /// <summary>Mutes or unmutes a session's WebView2 audio.</summary>
+    public void SetMuted(int sessionId, bool muted)
+    {
+        IWebViewTile? tile;
+        lock (_lock)
+            _tiles.TryGetValue(sessionId, out tile);
+
+        tile?.SetMuted(muted);
+    }
+
+    /// <summary>Mutes or unmutes ALL active WebView2 sessions at once.</summary>
+    public void SetAllMuted(bool muted)
+    {
+        List<IWebViewTile> tiles;
+        lock (_lock)
+            tiles = new List<IWebViewTile>(_tiles.Values);
+
+        foreach (var tile in tiles)
+            tile.SetMuted(muted);
+    }
+
+    /// <summary>Returns true if a specific session is muted.</summary>
+    public bool IsMuted(int sessionId)
+    {
+        lock (_lock)
+            return _tiles.TryGetValue(sessionId, out var t) && t.IsMuted;
     }
 
     /// <summary>Stops the screencast for a session.</summary>

@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Interface for a UI tile that can host a WebView2 session.</summary>
 public interface IWebViewTile
@@ -29,4 +29,10 @@ public interface IWebViewTile
 
     /// <summary>Stops CDP screencast.</summary>
     Task StopScreencastAsync();
+
+    /// <summary>Mutes or unmutes the WebView2 audio.</summary>
+    void SetMuted(bool muted);
+
+    /// <summary>True if the WebView2 audio is currently muted.</summary>
+    bool IsMuted { get; }
 }

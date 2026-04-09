@@ -9,7 +9,7 @@ using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
 using WinRT;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>
 /// Captures a window using the Windows Graphics Capture API (WGC).

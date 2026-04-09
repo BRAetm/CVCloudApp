@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Persisted configuration for a single session (saved to /Config).</summary>
 public class SessionConfig

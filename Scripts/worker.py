@@ -1,7 +1,7 @@
 """
-CVCloudApp — Enhanced Python CV Worker (v2.0)
+Labs Vision — Enhanced Python CV Worker (v2.0)
 
-Supports both CVCloudApp API (on_start/on_frame/on_stop) and
+Supports both Labs Vision API (on_start/on_frame/on_stop) and
 Helios II API (GCVWorker class with process() method).
 
 Usage:
@@ -99,7 +99,7 @@ def set_performance_optimizations():
 
 
 # ---------------------------------------------------------------------------
-# Script loader (dual API: CVCloudApp + Helios)
+# Script loader (dual API: Labs Vision + Helios)
 # ---------------------------------------------------------------------------
 
 SCRIPT_API_CVCLOUD = "cvcloud"    # on_start / on_frame / on_stop
@@ -107,7 +107,7 @@ SCRIPT_API_HELIOS  = "helios"     # GCVWorker class with process()
 
 
 def detect_script_api(module: types.ModuleType) -> str:
-    """Detects whether a script uses CVCloudApp or Helios API."""
+    """Detects whether a script uses Labs Vision or Helios API."""
     if hasattr(module, "GCVWorker"):
         return SCRIPT_API_HELIOS
     if callable(getattr(module, "on_frame", None)):
@@ -198,7 +198,7 @@ def make_emit(socket: zmq.Socket, session_id: int):
 # ---------------------------------------------------------------------------
 
 class HeliosWorkerAdapter:
-    """Wraps a Helios GCVWorker instance to work with CVCloudApp's pipeline."""
+    """Wraps a Helios GCVWorker instance to work with Labs Vision's pipeline."""
 
     def __init__(self, worker_cls, width: int = 640, height: int = 480):
         self.worker = worker_cls(width, height)
@@ -270,17 +270,24 @@ def frame_loop(session_id: int, script, emit, sub_socket: zmq.Socket,
                 events = sub_socket.poll(0)  # non-blocking check
                 if not events:
                     break
-                topic = sub_socket.recv_string(zmq.NOBLOCK)
-                jpeg_bytes = sub_socket.recv(zmq.NOBLOCK)
-                latest_jpeg = jpeg_bytes
-                drained += 1
+                # Use recv() not recv_string() — topic frames can be binary on some ZMQ builds
+                try:
+                    topic_bytes = sub_socket.recv(zmq.NOBLOCK)
+                    jpeg_bytes = sub_socket.recv(zmq.NOBLOCK)
+                    latest_jpeg = jpeg_bytes
+                    drained += 1
+                except zmq.ZMQError:
+                    break
 
             # If nothing was ready, do a short blocking poll
             if latest_jpeg is None:
                 events = sub_socket.poll(50)  # 50ms timeout (was 100)
                 if events:
-                    topic = sub_socket.recv_string()
-                    latest_jpeg = sub_socket.recv()
+                    try:
+                        topic_bytes = sub_socket.recv()
+                        latest_jpeg = sub_socket.recv()
+                    except zmq.ZMQError:
+                        pass
 
             if latest_jpeg is not None:
                 frame_count += 1
@@ -633,7 +640,7 @@ def main() -> None:
         "fps":         fps,
     }
 
-    # Load script (auto-detects CVCloudApp vs Helios API)
+    # Load script (auto-detects Labs Vision vs Helios API)
     module, api_type = load_script(script_path)
 
     # Create appropriate script adapter

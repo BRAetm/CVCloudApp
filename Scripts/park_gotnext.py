@@ -1,5 +1,5 @@
 """
-CVCloudApp — park_gotnext.py
+Labs Vision — park_gotnext.py
 
 Detects blue "Got Next" spots on 2K Park/City courts and
 auto-walks the player toward the nearest one.

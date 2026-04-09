@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 /// <summary>Dialog for configuring a new session — name, platform/source, and device/window selection.</summary>
 public partial class NewSessionDialog : Window

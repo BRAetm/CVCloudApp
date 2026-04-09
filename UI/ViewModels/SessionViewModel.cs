@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>ViewModel for one of 10 fixed feed slots. Can be empty or occupied by an active session.</summary>
 public class SessionViewModel : INotifyPropertyChanged, IDisposable

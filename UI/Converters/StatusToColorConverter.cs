@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.Converters;
+namespace LabsVision.UI.Converters;
 
 /// <summary>Converts a SessionStatus to a background Brush for the status badge.</summary>
 public class StatusToColorConverter : IValueConverter

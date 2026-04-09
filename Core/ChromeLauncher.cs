@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Launches Chrome instances with CDP remote debugging enabled, one per session.</summary>
 public class ChromeLauncher : IDisposable
@@ -14,7 +14,7 @@ public class ChromeLauncher : IDisposable
     private const string XboxCloudUrl  = "https://www.xbox.com/en-US/play";
     private const int    CdpBasePort   = 9222;
     private static readonly string UserDataRoot = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LabsVision");
 
     private static readonly string[] ChromeCandidatePaths =
     {

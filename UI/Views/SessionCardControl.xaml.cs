@@ -1,7 +1,7 @@
 using System.Windows.Controls;
-using CVCloudApp.UI.ViewModels;
+using LabsVision.UI.ViewModels;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 /// <summary>Session card UserControl — DataContext set externally, no logic here.</summary>
 public partial class SessionCardControl : UserControl

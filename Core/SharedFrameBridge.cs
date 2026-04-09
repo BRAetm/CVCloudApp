@@ -2,7 +2,7 @@ using System;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>
 /// Writes raw BGR frame pixels to a shared memory-mapped file that Python reads directly.

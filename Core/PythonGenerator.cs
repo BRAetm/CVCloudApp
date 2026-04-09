@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
-using CVCloudApp.Models;
+using LabsVision.Models;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Generates worker-compatible Python CV scripts from a CvScriptConfig.</summary>
 public static class PythonGenerator

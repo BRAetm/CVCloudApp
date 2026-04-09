@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 /// <summary>Region marked by the user for template detection.</summary>
 public class DetectionRegion : INotifyPropertyChanged

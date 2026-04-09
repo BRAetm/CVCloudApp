@@ -7,7 +7,7 @@ using NetMQ.Sockets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>
 /// Receives gamepad state from Python scripts via ZeroMQ SUB socket (port 5556)

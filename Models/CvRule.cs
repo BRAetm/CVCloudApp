@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace CVCloudApp.Models;
+namespace LabsVision.Models;
 
 /// <summary>Type of CV detection for a rule.</summary>
 public enum CvRuleType

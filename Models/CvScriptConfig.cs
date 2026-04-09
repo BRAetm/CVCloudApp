@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace CVCloudApp.Models;
+namespace LabsVision.Models;
 
 /// <summary>Serializable configuration for a CV script — a named list of CvRules.</summary>
 public class CvScriptConfig

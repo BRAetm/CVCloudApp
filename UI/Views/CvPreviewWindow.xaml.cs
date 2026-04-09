@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 /// <summary>Floating, always-on-top CV preview window. Can be minimized while CV keeps running.</summary>
 public partial class CvPreviewWindow : Window

@@ -1,5 +1,5 @@
 """
-CVCloudApp — nba2k_players.py
+Labs Vision — nba2k_players.py
 
 Detects and highlights NBA 2K players on the court using color-based
 segmentation. Works with cloud gaming streams.

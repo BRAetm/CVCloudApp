@@ -1,5 +1,5 @@
 """
-CVCloudApp — Color Trigger Script
+Labs Vision — Color Trigger Script
 
 Detects a specific color on screen and presses a button when found.
 Configure the color range and button below, or use the CV Builder

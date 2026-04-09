@@ -1,4 +1,4 @@
-"""
+r"""
 train_pad_yolo.py — Train a YOLOv8 model to detect Got Next pads.
 
 Workflow:
@@ -58,14 +58,63 @@ def make_yolo_dataset(pairs, dataset_dir: str, val_split: float = 0.2):
     return train_pairs, val_pairs
 
 
-def write_data_yaml(dataset_dir: str):
+def write_data_yaml(dataset_dir: str, source_folder: str = None):
+    """Auto-detects how many classes are in the labels and writes data.yaml.
+    Reads custom class names from <source_folder>/_class_names.txt if it exists.
+    """
+    # Scan all label files to find max class id
+    max_cid = 0
+    train_lbl = os.path.join(dataset_dir, "labels", "train")
+    if os.path.isdir(train_lbl):
+        for f_name in os.listdir(train_lbl):
+            if not f_name.endswith(".txt"):
+                continue
+            try:
+                with open(os.path.join(train_lbl, f_name)) as fp:
+                    for line in fp:
+                        parts = line.strip().split()
+                        if parts:
+                            cid = int(parts[0])
+                            if cid > max_cid:
+                                max_cid = cid
+            except Exception:
+                pass
+
+    nc = max_cid + 1
+    # Preset class names from label_objects.py
+    DEFAULT_NAMES = ["pad", "nameplate", "own_player", "prompt", "wall"]
+    names = list(DEFAULT_NAMES[:nc]) if nc <= len(DEFAULT_NAMES) else list(DEFAULT_NAMES)
+
+    # Pad with placeholders if we need more
+    while len(names) < nc:
+        names.append(f"class_{len(names)}")
+
+    # Read custom class names from _class_names.txt (saved by label_objects.py)
+    if source_folder is None:
+        source_folder = dataset_dir.replace("_yolo_dataset", "")
+    custom_path = os.path.join(source_folder, "_class_names.txt")
+    if os.path.isfile(custom_path):
+        try:
+            with open(custom_path) as f:
+                for line in f:
+                    parts = line.strip().split(":", 1)
+                    if len(parts) != 2:
+                        continue
+                    cid = int(parts[0])
+                    name = parts[1]
+                    if cid < nc:
+                        names[cid] = name
+        except Exception as e:
+            print(f"  warn: couldn't read custom class names: {e}")
+
     yaml_path = os.path.join(dataset_dir, "data.yaml")
     with open(yaml_path, "w") as f:
         f.write(f"path: {os.path.abspath(dataset_dir)}\n")
         f.write("train: images/train\n")
         f.write("val:   images/val\n")
-        f.write("nc: 1\n")
-        f.write("names: ['pad']\n")
+        f.write(f"nc: {nc}\n")
+        f.write(f"names: {names}\n")
+    print(f"  detected nc={nc}, names={names}")
     return yaml_path
 
 
@@ -99,7 +148,7 @@ def main():
 
     print(f"Building YOLO dataset at {dataset_dir}")
     make_yolo_dataset(pairs, dataset_dir)
-    yaml_path = write_data_yaml(dataset_dir)
+    yaml_path = write_data_yaml(dataset_dir, source_folder=folder)
     print(f"Wrote {yaml_path}\n")
 
     print(f"Training YOLOv8 (base: {args.model}, epochs={args.epochs}, imgsz={args.imgsz})")

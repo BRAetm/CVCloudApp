@@ -1,5 +1,5 @@
 """
-CVCloudApp — NBA 2K Shot Meter Detection (2KVision)
+Labs Vision — NBA 2K Shot Meter Detection (2KVision)
 
 Pure OpenCV implementation of Helios-style shot meter detection.
 Supports all 7 meter types from Helios's nba2k_settings configuration:
@@ -8,7 +8,7 @@ Supports all 7 meter types from Helios's nba2k_settings configuration:
 Uses BGR color range filtering + contour detection with confidence decay
 to track the moving meter and fire the shot button at the right moment.
 
-Usage: Select this script in CVCloudApp and start it on your Xbox Cloud session.
+Usage: Select this script in Labs Vision and start it on your Xbox Cloud session.
 """
 
 import time

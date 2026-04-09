@@ -9,12 +9,12 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
-using CVCloudApp.Core;
-using CVCloudApp.Models;
-using CVCloudApp.UI.Views;
+using LabsVision.Core;
+using LabsVision.Models;
+using LabsVision.UI.Views;
 
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>File-based debug logging for WGC pipeline.</summary>
 static class DebugLog
@@ -99,8 +99,35 @@ public class MainViewModel : INotifyPropertyChanged
             async () => await AddSessionAsync(),
             () => !IsAddingSession && Slots.Any(s => !s.IsOccupied));
 
+        ToggleMuteCommand = new RelayCommand(OnToggleMute);
+
         CvBuilder = new CvBuilderViewModel(Slots);
         ToggleCvBuilderCommand = new RelayCommand(() => IsCvBuilderOpen = !IsCvBuilderOpen);
+    }
+
+    private bool _isAllMuted;
+
+    /// <summary>True if all sessions are currently muted.</summary>
+    public bool IsAllMuted
+    {
+        get => _isAllMuted;
+        private set { _isAllMuted = value; OnPropertyChanged(); OnPropertyChanged(nameof(MuteButtonLabel)); OnPropertyChanged(nameof(MuteButtonIcon)); }
+    }
+
+    /// <summary>Label shown on the mute button.</summary>
+    public string MuteButtonLabel => _isAllMuted ? "Unmute" : "Mute";
+
+    /// <summary>Icon shown on the mute button.</summary>
+    public string MuteButtonIcon => _isAllMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A"; // 🔇 / 🔊
+
+    /// <summary>Toggles audio mute on all active WebView2 sessions.</summary>
+    public ICommand ToggleMuteCommand { get; }
+
+    private void OnToggleMute()
+    {
+        IsAllMuted = !IsAllMuted;
+        _webViewHost.SetAllMuted(IsAllMuted);
+        DebugLog.Write($"[MainVM] Mute toggled: {(IsAllMuted ? "ON" : "OFF")}");
     }
 
     // ---------------------------------------------------------------------------

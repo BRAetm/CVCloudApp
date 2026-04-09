@@ -1,7 +1,7 @@
 """
-CVCloudApp — Helios-Style Demo Script
+Labs Vision — Helios-Style Demo Script
 
-Demonstrates using the Helios GCVWorker API with CVCloudApp.
+Demonstrates using the Helios GCVWorker API with Labs Vision.
 Shows controller visualization (like Helios CVTest.py) and
 button passthrough.
 
@@ -122,7 +122,7 @@ class GCVWorker:
 
     def draw_info(self, frame, w, h):
         """Draw frame counter and status info."""
-        cv2.putText(frame, f"CVCloudApp + Helios SDK | Frame {self.frame_count}",
+        cv2.putText(frame, f"Labs Vision + Helios SDK | Frame {self.frame_count}",
                     (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                     (200, 200, 200), 1, cv2.LINE_AA)
         cv2.putText(frame, "GCVWorker active",

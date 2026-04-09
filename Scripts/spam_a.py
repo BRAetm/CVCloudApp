@@ -1,5 +1,5 @@
 """
-CVCloudApp — spam_a.py
+Labs Vision — spam_a.py
 
 Spams the A button by alternating press/release every frame.
 Web Gamepad API button index 0 = A button.

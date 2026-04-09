@@ -1,5 +1,5 @@
 """
-CVCloudApp — Example CV script.
+Labs Vision — Example CV script.
 
 Demonstrates the required three-method API.
 Receives frames from C# via ZMQ (decoded as BGR numpy arrays).

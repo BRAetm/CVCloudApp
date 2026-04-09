@@ -4,7 +4,7 @@ using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 // ---------------------------------------------------------------------------
 // Data Model

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace CVCloudApp.UI.Converters;
+namespace LabsVision.UI.Converters;
 
 /// <summary>Converts bool to Visibility. Pass parameter="Invert" to flip the mapping.</summary>
 public class BoolToVisibilityConverter : IValueConverter

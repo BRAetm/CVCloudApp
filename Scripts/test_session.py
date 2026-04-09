@@ -1,5 +1,5 @@
 """
-CVCloudApp — test_session.py
+Labs Vision — test_session.py
 
 Test script that runs a gamepad input sequence:
   1. Press A button 3 times

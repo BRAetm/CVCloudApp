@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.Converters;
+namespace LabsVision.UI.Converters;
 
 /// <summary>Converts SessionStatus to the 4px left-edge indicator bar color.</summary>
 public class StatusToBarBrushConverter : IValueConverter

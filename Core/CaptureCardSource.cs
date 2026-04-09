@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenCvSharp;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Info about a detected video capture device.</summary>
 public record CaptureDeviceInfo(int Index, string Name);

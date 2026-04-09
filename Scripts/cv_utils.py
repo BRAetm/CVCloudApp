@@ -1,5 +1,5 @@
 """
-CVCloudApp — CV Utility Library
+Labs Vision — CV Utility Library
 
 Reusable computer vision helpers for building detection scripts.
 Import these into your on_frame() or GCVWorker.process() scripts.

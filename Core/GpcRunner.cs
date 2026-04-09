@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>
 /// Compiles and runs GPC3 scripts using the Helios GPC3 toolchain.

@@ -7,13 +7,13 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Microsoft.Web.WebView2.Core;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Borderless WPF window hosting a WebView2 control for Xbox Cloud Gaming.</summary>
 public partial class GameWindow : Window
 {
     private static readonly string UserDataRoot = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp", "WebView2");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LabsVision", "WebView2");
 
     // Same JS as CdpGamepadInjector — installs fake gamepad + visibility overrides
     private const string InjectGamepadJs = @"(function() {

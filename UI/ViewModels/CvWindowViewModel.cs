@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>ViewModel for the floating CV preview window showing the live session capture feed.</summary>
 public class CvWindowViewModel : INotifyPropertyChanged, IDisposable

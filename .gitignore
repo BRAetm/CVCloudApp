@@ -41,3 +41,19 @@ Config/session_*.json
 GpcCompiled/
 Templates/
 ScriptConfigs/
+
+## ML / training data (too big for git)
+Scripts/boost_court_templates/
+Scripts/**/_yolo_dataset/
+Scripts/**/_yolo_runs/
+Scripts/**/runs/
+*.pt
+*.onnx
+*.weights
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+## Claude Code internal state
+.claude/

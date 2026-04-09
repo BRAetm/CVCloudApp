@@ -2,10 +2,10 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using CVCloudApp.UI.Controls;
-using CVCloudApp.UI.ViewModels;
+using LabsVision.UI.Controls;
+using LabsVision.UI.ViewModels;
 
-namespace CVCloudApp;
+namespace LabsVision;
 
 /// <summary>Shell window — sets DataContext only, no business logic.</summary>
 public partial class MainWindow : Window

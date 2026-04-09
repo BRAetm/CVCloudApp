@@ -1,4 +1,4 @@
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Abstraction for sending gamepad input to a browser session.</summary>
 public interface IGamepadSink

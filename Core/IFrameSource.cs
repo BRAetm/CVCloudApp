@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Input source type for a session.</summary>
 public enum InputSourceType

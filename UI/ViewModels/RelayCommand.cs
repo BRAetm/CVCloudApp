@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Input;
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>Minimal ICommand implementation that delegates execute and canExecute to supplied delegates.</summary>
 public class RelayCommand : ICommand

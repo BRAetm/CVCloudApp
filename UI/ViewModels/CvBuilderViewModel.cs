@@ -8,11 +8,11 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using CVCloudApp.Core;
-using CVCloudApp.Models;
+using LabsVision.Core;
+using LabsVision.Models;
 using Microsoft.Win32;
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>ViewModel for the CV rule builder — create, edit, save, and generate CV scripts.</summary>
 public class CvBuilderViewModel : INotifyPropertyChanged

@@ -1,11 +1,11 @@
 """
 2K Vision Pro — Full CV script with settings GUI
 
-Loads inside CVCloudApp via the GCVWorker pattern.
+Loads inside Labs Vision via the GCVWorker pattern.
 When started, spawns a PyQt6 settings window for configuring
 shot algorithm, meter type, controller mods, etc.
 
-Usage: Select this script in CVCloudApp and press Run.
+Usage: Select this script in Labs Vision and press Run.
 """
 
 import os
@@ -371,7 +371,7 @@ def _run_gui(settings):
 
 
 # ---------------------------------------------------------------------------
-# GCVWorker — loaded by CVCloudApp's worker.py
+# GCVWorker — loaded by Labs Vision's worker.py
 # ---------------------------------------------------------------------------
 
 class GCVWorker:

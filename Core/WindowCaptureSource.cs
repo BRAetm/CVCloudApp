@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Info about a discovered application window.</summary>
 public record AppWindowInfo(nint Hwnd, string Title, string ProcessName, int Pid);

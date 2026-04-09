@@ -13,9 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
-using CVCloudApp.UI.ViewModels;
+using LabsVision.UI.ViewModels;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 // ============================================================================
 // Data models

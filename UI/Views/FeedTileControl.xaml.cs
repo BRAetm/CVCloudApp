@@ -6,18 +6,18 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using CVCloudApp.Core;
-using CVCloudApp.UI.ViewModels;
+using LabsVision.Core;
+using LabsVision.UI.ViewModels;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
-namespace CVCloudApp.UI.Views;
+namespace LabsVision.UI.Views;
 
 /// <summary>Feed tile that hosts an embedded WebView2 for cloud gaming.</summary>
 public partial class FeedTileControl : System.Windows.Controls.UserControl, IWebViewTile
 {
     private static readonly string UserDataRoot = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CVCloudApp", "WebView2");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LabsVision", "WebView2");
 
     private const string InjectGamepadJs = @"(function() {
   if (window.__cvGamepad) { console.log('[CV] gamepad already injected'); return; }
@@ -164,6 +164,7 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
     private DispatcherTimer? _captureTimer;
     private volatile bool _isCapturing;
     private int _captureCount;
+    private bool _isMuted;
 
     public FeedTileControl()
     {
@@ -172,6 +173,32 @@ public partial class FeedTileControl : System.Windows.Controls.UserControl, IWeb
 
     /// <summary>True when WebView2 is initialized and ready for input.</summary>
     public bool IsWebViewReady => _isReady;
+
+    /// <summary>True if WebView2 audio is currently muted.</summary>
+    public bool IsMuted => _isMuted;
+
+    /// <summary>Mutes or unmutes the WebView2 audio output.</summary>
+    public void SetMuted(bool muted)
+    {
+        _isMuted = muted;
+        if (_webView?.CoreWebView2 is null) return;
+
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(() => SetMuted(muted));
+            return;
+        }
+
+        try
+        {
+            _webView.CoreWebView2.IsMuted = muted;
+            Console.WriteLine($"[FeedTile] Session {_sessionId}: audio {(muted ? "MUTED" : "UNMUTED")}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FeedTile] Session {_sessionId}: SetMuted failed — {ex.Message}");
+        }
+    }
 
     /// <summary>Shows a CV frame in the floating CV preview window. WebView2 stays untouched.</summary>
     public void ShowCvFrame(byte[] jpegBytes)

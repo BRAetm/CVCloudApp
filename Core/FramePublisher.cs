@@ -4,7 +4,7 @@ using System.Windows.Media.Imaging;
 using NetMQ;
 using NetMQ.Sockets;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Publishes WGC-captured frames to Python scripts via a ZMQ PUB socket.</summary>
 public sealed class FramePublisher : IDisposable

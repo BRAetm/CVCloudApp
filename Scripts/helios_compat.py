@@ -1,8 +1,8 @@
 """
-CVCloudApp — Helios II Compatibility Layer
+Labs Vision — Helios II Compatibility Layer
 
 Provides the same button constants and API functions as Helios's gtuner.pyd,
-so scripts written for Helios can run on CVCloudApp with minimal changes.
+so scripts written for Helios can run on Labs Vision with minimal changes.
 
 Usage in scripts:
     from helios_compat import *
@@ -86,7 +86,7 @@ XBOX_B     = BUTTON_15
 XBOX_X     = BUTTON_16
 XBOX_Y     = BUTTON_17
 
-# Web Gamepad API button index mapping (for CVCloudApp bridge)
+# Web Gamepad API button index mapping (for Labs Vision bridge)
 _BUTTON_TO_WEB_GAMEPAD = {
     BUTTON_14: 0,   # A → buttons[0]
     BUTTON_15: 1,   # B → buttons[1]
@@ -179,7 +179,7 @@ def send_gcvdata(data: bytes):
 def gcvdata_to_gamepad_state(data: bytes) -> dict:
     """
     Converts a Helios-format gcvdata bytearray into a Web Gamepad API dict
-    compatible with CVCloudApp's emit() format.
+    compatible with Labs Vision's emit() format.
 
     Helios gcvdata layout (24-32+ bytes):
       [0]: frame counter / misc

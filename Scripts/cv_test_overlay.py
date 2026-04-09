@@ -1,5 +1,5 @@
 """
-CVCloudApp — cv_test_overlay.py
+Labs Vision — cv_test_overlay.py
 
 Visual-only test script. Shows an FPS counter, frame dimensions,
 color histogram, and edge detection overlay to confirm the CV

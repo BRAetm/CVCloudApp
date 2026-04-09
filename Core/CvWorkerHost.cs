@@ -9,7 +9,7 @@ using NetMQ.Sockets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Spawns and manages Python CV worker subprocesses per session.</summary>
 public class CvWorkerHost : IAsyncDisposable

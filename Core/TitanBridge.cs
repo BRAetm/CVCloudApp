@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using HidSharp;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>Supported Titan/Cronus device types.</summary>
 public enum TitanDeviceType { TitanTwo, CronusZen, CronusMax, Unknown }

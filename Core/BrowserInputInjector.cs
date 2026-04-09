@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CVCloudApp.Core;
+namespace LabsVision.Core;
 
 /// <summary>
 /// Injects keyboard input directly into a browser HWND via PostMessage,

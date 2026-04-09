@@ -5,10 +5,10 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Windows;
-using CVCloudApp.Core;
-using CVCloudApp.UI.ViewModels;
+using LabsVision.Core;
+using LabsVision.UI.ViewModels;
 
-namespace CVCloudApp;
+namespace LabsVision;
 
 /// <summary>Application entry point — composes the dependency graph and opens MainWindow.</summary>
 public partial class App : Application
@@ -51,7 +51,7 @@ public partial class App : Application
         ClearLogFile(Path.Combine(logDir, "worker_debug.log"));
         ClearLogFile(Path.Combine(logDir, "wgc_debug.log"));
 
-        // Kill any stale CVCloudApp processes that may be holding ZMQ ports
+        // Kill any stale LabsVision processes that may be holding ZMQ ports
         KillStalePorts(5580, 5590);
 
         _sessionManager = new SessionManager();
@@ -215,6 +215,6 @@ public partial class App : Application
 
     private static void ClearLogFile(string path)
     {
-        try { File.WriteAllText(path, $"=== CVCloudApp started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==={Environment.NewLine}"); } catch { }
+        try { File.WriteAllText(path, $"=== LabsVision started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==={Environment.NewLine}"); } catch { }
     }
 }

@@ -1,9 +1,9 @@
 using System;
 using System.Globalization;
 using System.Windows.Data;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.Converters;
+namespace LabsVision.UI.Converters;
 
 /// <summary>Converts a SessionStatus to a human-readable display label.</summary>
 public class StatusToStringConverter : IValueConverter

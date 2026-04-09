@@ -7,9 +7,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using CVCloudApp.Models;
+using LabsVision.Models;
 
-namespace CVCloudApp.UI.Controls;
+namespace LabsVision.UI.Controls;
 
 /// <summary>Live feed preview with interactive region drawing and rule overlay.</summary>
 public partial class CvPreviewControl : UserControl

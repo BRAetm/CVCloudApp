@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using CVCloudApp.Core;
+using LabsVision.Core;
 
-namespace CVCloudApp.UI.ViewModels;
+namespace LabsVision.UI.ViewModels;
 
 /// <summary>ViewModel for a single session card in the left panel grid and a feed tile in the right monitor.</summary>
 public class SessionCardViewModel : INotifyPropertyChanged, IDisposable
